@@ -45,6 +45,7 @@ function thumbnailUrl(playbackId: string) {
 async function muxFetch<T>(path: string, auth: string) {
   const response = await fetch(`https://api.mux.com/video/v1${path}`, {
     headers: { Authorization: `Basic ${auth}` },
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -76,6 +77,9 @@ export async function POST() {
 
   let checked = 0;
   let updated = 0;
+  let waiting = 0;
+  let processing = 0;
+  let errored = 0;
 
   for (const row of rows) {
     if (!row.muxUploadId) {
@@ -85,14 +89,34 @@ export async function POST() {
     checked += 1;
     const upload = await muxFetch<MuxUploadResponse>(`/uploads/${row.muxUploadId}`, auth);
     const assetId = upload?.data?.asset_id;
+    const uploadStatus = upload?.data?.status;
 
     if (!assetId) {
+      const status = uploadStatus === "errored" ? "errored" : "waiting_for_upload";
+
+      if (status === "errored") {
+        errored += 1;
+      } else {
+        waiting += 1;
+      }
+
+      await prisma.$executeRawUnsafe(
+        'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
+        status,
+        row.id,
+      );
       continue;
     }
 
     const asset = await muxFetch<MuxAssetResponse>(`/assets/${assetId}`, auth);
     const playbackId = asset?.data?.playback_ids?.find((playback) => playback.policy === "public")?.id || asset?.data?.playback_ids?.[0]?.id;
     const status = asset?.data?.status === "ready" && playbackId ? "ready" : "processing";
+
+    if (status === "ready") {
+      updated += 1;
+    } else {
+      processing += 1;
+    }
 
     if (playbackId) {
       await prisma.$executeRawUnsafe(
@@ -113,12 +137,10 @@ export async function POST() {
         row.id,
       );
     }
-
-    updated += 1;
   }
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/media");
 
-  return NextResponse.json({ checked, updated });
+  return NextResponse.json({ checked, updated, waiting, processing, errored });
 }
