@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { dashboardAuthCookie, getDashboardSessionToken } from "@/lib/dashboard-auth";
+import { applyMuxAssetToMedia, markMediaErrored, mediaIdFromMuxData, type MuxAssetData, type MuxUploadData } from "@/lib/mux-media";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -9,37 +10,26 @@ export const runtime = "nodejs";
 
 type ProcessingMedia = {
   id: string;
+  status: string;
   muxUploadId: string | null;
+  muxAssetId: string | null;
 };
 
 type MuxUploadResponse = {
-  data?: {
-    id?: string;
-    asset_id?: string;
-    status?: string;
-  };
+  data?: MuxUploadData;
 };
 
 type MuxAssetResponse = {
-  data?: {
-    id?: string;
-    status?: string;
-    duration?: number;
-    playback_ids?: Array<{ id?: string; policy?: string }>;
-  };
+  data?: MuxAssetData;
+};
+
+type MuxAssetListResponse = {
+  data?: MuxAssetData[];
 };
 
 async function isDashboardSession() {
   const cookieStore = await cookies();
   return cookieStore.get(dashboardAuthCookie)?.value === getDashboardSessionToken();
-}
-
-function hlsUrl(playbackId: string) {
-  return `https://stream.mux.com/${playbackId}.m3u8`;
-}
-
-function thumbnailUrl(playbackId: string) {
-  return `https://image.mux.com/${playbackId}/thumbnail.jpg`;
 }
 
 async function muxFetch<T>(path: string, auth: string) {
@@ -53,6 +43,28 @@ async function muxFetch<T>(path: string, auth: string) {
   }
 
   return (await response.json()) as T;
+}
+
+async function findAssetForRow(row: ProcessingMedia, auth: string) {
+  if (row.muxAssetId) {
+    return (await muxFetch<MuxAssetResponse>(`/assets/${row.muxAssetId}`, auth))?.data;
+  }
+
+  if (row.muxUploadId) {
+    const upload = (await muxFetch<MuxUploadResponse>(`/uploads/${row.muxUploadId}`, auth))?.data;
+
+    if (upload?.asset_id) {
+      return (await muxFetch<MuxAssetResponse>(`/assets/${upload.asset_id}`, auth))?.data;
+    }
+
+    if (upload?.status === "errored") {
+      await markMediaErrored(row.id);
+      return { status: "errored" } satisfies MuxAssetData;
+    }
+  }
+
+  const assets = (await muxFetch<MuxAssetListResponse>("/assets?limit=100", auth))?.data || [];
+  return assets.find((asset) => mediaIdFromMuxData(asset) === row.id);
 }
 
 export async function POST() {
@@ -72,7 +84,12 @@ export async function POST() {
 
   const auth = Buffer.from(`${tokenId}:${tokenSecret}`).toString("base64");
   const rows = await prisma.$queryRawUnsafe<ProcessingMedia[]>(
-    'SELECT "id", "muxUploadId" FROM "MediaAsset" WHERE "muxUploadId" IS NOT NULL AND ("playbackUrl" = \'\' OR "status" <> \'ready\') ORDER BY "createdAt" DESC LIMIT 25',
+    `SELECT "id", "status", "muxUploadId", "muxAssetId"
+     FROM "MediaAsset"
+     WHERE ("muxUploadId" IS NOT NULL OR "muxAssetId" IS NOT NULL)
+       AND ("playbackUrl" = '' OR "status" <> 'ready')
+     ORDER BY "createdAt" DESC
+     LIMIT 50`,
   );
 
   let checked = 0;
@@ -82,60 +99,32 @@ export async function POST() {
   let errored = 0;
 
   for (const row of rows) {
-    if (!row.muxUploadId) {
-      continue;
-    }
-
     checked += 1;
-    const upload = await muxFetch<MuxUploadResponse>(`/uploads/${row.muxUploadId}`, auth);
-    const assetId = upload?.data?.asset_id;
-    const uploadStatus = upload?.data?.status;
 
-    if (!assetId) {
-      const status = uploadStatus === "errored" ? "errored" : "waiting_for_upload";
+    const asset = await findAssetForRow(row, auth);
 
-      if (status === "errored") {
+    if (!asset?.id) {
+      if (asset?.status === "errored") {
         errored += 1;
+      } else if (row.status === "uploaded_processing" || row.status === "processing") {
+        processing += 1;
       } else {
         waiting += 1;
+        await prisma.$executeRawUnsafe(
+          'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
+          "waiting_for_upload",
+          row.id,
+        );
       }
-
-      await prisma.$executeRawUnsafe(
-        'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
-        status,
-        row.id,
-      );
       continue;
     }
 
-    const asset = await muxFetch<MuxAssetResponse>(`/assets/${assetId}`, auth);
-    const playbackId = asset?.data?.playback_ids?.find((playback) => playback.policy === "public")?.id || asset?.data?.playback_ids?.[0]?.id;
-    const status = asset?.data?.status === "ready" && playbackId ? "ready" : "processing";
+    const status = await applyMuxAssetToMedia(row.id, asset);
 
     if (status === "ready") {
       updated += 1;
     } else {
       processing += 1;
-    }
-
-    if (playbackId) {
-      await prisma.$executeRawUnsafe(
-        'UPDATE "MediaAsset" SET "muxAssetId" = $1, "muxPlaybackId" = $2, "durationSeconds" = $3, "playbackUrl" = $4, "thumbnailUrl" = $5, "status" = $6 WHERE "id" = $7',
-        assetId,
-        playbackId,
-        Math.round(asset?.data?.duration || 0),
-        hlsUrl(playbackId),
-        thumbnailUrl(playbackId),
-        status,
-        row.id,
-      );
-    } else {
-      await prisma.$executeRawUnsafe(
-        'UPDATE "MediaAsset" SET "muxAssetId" = $1, "status" = $2 WHERE "id" = $3',
-        assetId,
-        status,
-        row.id,
-      );
     }
   }
 

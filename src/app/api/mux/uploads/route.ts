@@ -77,6 +77,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         cors_origin: request.headers.get("origin") || "*",
         new_asset_settings: {
+          passthrough: id,
           playback_policy: ["public"],
           video_quality: "basic",
           meta: {

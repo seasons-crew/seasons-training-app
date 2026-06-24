@@ -14,6 +14,7 @@ type UploadResponse = {
 
 type UploadItem = {
   id: string;
+  mediaAssetId?: string;
   name: string;
   progress: number;
   status: "queued" | "creating" | "uploading" | "processing" | "error";
@@ -43,6 +44,7 @@ function parseUploadResponse(text: string) {
 export function MuxUploadCard({ enabled }: { enabled: boolean }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const mediaAssetIdsRef = useRef(new Map<string, string>());
   const [tags, setTags] = useState("");
   const [message, setMessage] = useState(
     enabled ? "Drop videos here or choose files." : "Add Mux credentials to enable direct uploads.",
@@ -85,8 +87,31 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
       throw new Error(payload.error ? `${payload.error}${detail}` : `Upload endpoint failed with ${response.status}.`);
     }
 
-    updateUpload(uploadId, { status: "uploading", message: "Uploading" });
+    if (payload.mediaAssetId) {
+      mediaAssetIdsRef.current.set(uploadId, payload.mediaAssetId);
+    }
+
+    updateUpload(uploadId, {
+      mediaAssetId: payload.mediaAssetId,
+      status: "uploading",
+      message: "Uploading",
+    });
+    router.refresh();
     return payload.url;
+  }
+
+  async function markUploadComplete(uploadId: string) {
+    const mediaAssetId = mediaAssetIdsRef.current.get(uploadId);
+
+    if (!mediaAssetId) {
+      return;
+    }
+
+    await fetch("/api/mux/uploads/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mediaAssetId }),
+    });
   }
 
   function startUpload(file: File) {
@@ -123,7 +148,9 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
         message: "Mux processing",
       });
       setMessage("Uploads complete. Mux is processing the videos.");
-      void syncProcessingMedia();
+      void markUploadComplete(id).finally(() => {
+        void syncProcessingMedia();
+      });
     });
 
     upload.on("error", (event) => {

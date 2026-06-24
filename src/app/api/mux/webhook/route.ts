@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { applyMuxAssetToMedia, markMediaErrored, mediaIdFromMuxData, type MuxAssetData, type MuxUploadData } from "@/lib/mux-media";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -7,18 +8,10 @@ export const runtime = "nodejs";
 
 type MuxWebhookPayload = {
   type?: string;
-  data?: {
-    id?: string;
+  data?: (MuxAssetData & MuxUploadData & {
     asset_id?: string;
     upload_id?: string;
-    duration?: number;
-    playback_ids?: Array<{ id?: string; policy?: string }>;
-    meta?: {
-      external_id?: string;
-      title?: string;
-    };
-    status?: string;
-  };
+  });
 };
 
 function requireWebhookToken(request: Request) {
@@ -32,12 +25,25 @@ function requireWebhookToken(request: Request) {
   return token === secret;
 }
 
-function hlsUrl(playbackId: string) {
-  return `https://stream.mux.com/${playbackId}.m3u8`;
-}
+async function updateByMediaIdOrAssetId(mediaAssetId: string | undefined, asset: MuxAssetData) {
+  if (mediaAssetId) {
+    return applyMuxAssetToMedia(mediaAssetId, asset);
+  }
 
-function thumbnailUrl(playbackId: string) {
-  return `https://image.mux.com/${playbackId}/thumbnail.jpg`;
+  if (!asset.id) {
+    return undefined;
+  }
+
+  const row = await prisma.mediaAsset.findFirst({
+    where: { muxAssetId: asset.id },
+    select: { id: true },
+  });
+
+  if (!row) {
+    return undefined;
+  }
+
+  return applyMuxAssetToMedia(row.id, asset);
 }
 
 export async function POST(request: Request) {
@@ -51,63 +57,26 @@ export async function POST(request: Request) {
 
   const event = (await request.json().catch(() => ({}))) as MuxWebhookPayload;
   const data = event.data || {};
+  const mediaAssetId = mediaIdFromMuxData(data);
 
-  if (event.type === "video.upload.asset_created" && data.asset_id) {
-    await prisma.mediaAsset.updateMany({
-      where: {
-        OR: [
-          { id: data.meta?.external_id },
-        ],
-      },
-      data: {
-        muxAssetId: data.asset_id,
-      },
-    });
-    if (data.meta?.external_id) {
+  if ((event.type === "video.upload.asset_created" || event.type === "video.asset.created") && data.asset_id) {
+    if (mediaAssetId) {
       await prisma.$executeRawUnsafe(
-        'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
+        'UPDATE "MediaAsset" SET "muxAssetId" = $1, "status" = $2 WHERE "id" = $3',
+        data.asset_id,
         "processing",
-        data.meta.external_id,
+        mediaAssetId,
       );
     }
   }
 
-  if (event.type === "video.asset.ready") {
-    const playbackId = data.playback_ids?.find((playback) => playback.policy === "public")?.id || data.playback_ids?.[0]?.id;
-
-    if (playbackId) {
-      await prisma.mediaAsset.updateMany({
-        where: {
-          OR: [
-            { id: data.meta?.external_id },
-            { muxAssetId: data.id },
-          ],
-        },
-        data: {
-          durationSeconds: Math.round(data.duration || 0),
-          muxAssetId: data.id,
-          muxPlaybackId: playbackId,
-          playbackUrl: hlsUrl(playbackId),
-          thumbnailUrl: thumbnailUrl(playbackId),
-        },
-      });
-      if (data.meta?.external_id) {
-        await prisma.$executeRawUnsafe(
-          'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
-          "ready",
-          data.meta.external_id,
-        );
-      }
-    }
+  if (event.type === "video.asset.ready" || event.type === "video.asset.created") {
+    await updateByMediaIdOrAssetId(mediaAssetId, data);
   }
 
   if (event.type === "video.asset.errored" || event.type === "video.upload.cancelled" || event.type === "video.upload.timed_out") {
-    if (data.meta?.external_id) {
-      await prisma.$executeRawUnsafe(
-        'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
-        "errored",
-        data.meta.external_id,
-      );
+    if (mediaAssetId) {
+      await markMediaErrored(mediaAssetId);
     }
   }
 
