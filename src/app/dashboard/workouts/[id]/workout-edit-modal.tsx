@@ -1,7 +1,7 @@
 "use client";
 
 import { Edit3, X } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useTransition } from "react";
 import type { SportCategory } from "@/lib/types";
 
 type WorkoutEditModalProps = {
@@ -25,6 +25,14 @@ export function WorkoutEditModal({
   title,
 }: WorkoutEditModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function submitWorkout(formData: FormData) {
+    startTransition(async () => {
+      await action(formData);
+      dialogRef.current?.close();
+    });
+  }
 
   return (
     <>
@@ -52,7 +60,7 @@ export function WorkoutEditModal({
             <X size={16} />
           </button>
         </div>
-        <form action={action} className="grid max-h-[calc(100dvh-120px)] gap-4 overflow-y-auto p-5">
+        <form action={submitWorkout} className="grid max-h-[calc(100dvh-120px)] gap-4 overflow-y-auto p-5">
           <input type="hidden" name="id" value={id} />
           <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
             Title
@@ -80,10 +88,10 @@ export function WorkoutEditModal({
               Cancel
             </button>
             <button
-              disabled={!canEdit}
+              disabled={!canEdit || isPending}
               className="h-10 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Save
+              {isPending ? "Saving" : "Save"}
             </button>
           </div>
         </form>
