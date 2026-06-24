@@ -54,9 +54,9 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const rawTitle = typeof body.title === "string" ? body.title.trim() : "";
-  const title = rawTitle || "Untitled upload";
-  const id = `${slugify(title) || "upload"}-${crypto.randomUUID().slice(0, 8)}`;
+  const filename = typeof body.filename === "string" && body.filename.trim() ? body.filename.trim() : "upload";
+  const title = "";
+  const id = `${slugify(filename) || "upload"}-${crypto.randomUUID().slice(0, 8)}`;
   const auth = Buffer.from(`${tokenId}:${tokenSecret}`).toString("base64");
 
   const muxResponse = await fetch("https://api.mux.com/video/v1/uploads", {
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         playback_policies: ["public"],
         video_quality: "basic",
         meta: {
-          title,
+          title: filename,
           external_id: id,
         },
       },

@@ -61,7 +61,7 @@ export default async function MediaPage() {
               )}
               <div className="p-4">
                 <div className="flex flex-col gap-1 border-b border-stone-100 pb-4">
-                  <h2 className="font-semibold">{asset.title}</h2>
+                  <h2 className="font-semibold">{asset.title || "Untitled upload"}</h2>
                   <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
                     <span>{asset.durationSeconds}s - {asset.tags.join(", ") || "untagged"}</span>
                     {asset.status ? (
