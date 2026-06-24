@@ -8,12 +8,18 @@ if (databaseUrl && !process.env.DATABASE_URL) {
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
+  prismaDatabaseUrl?: string;
 };
 
+const shouldReuseClient =
+  globalForPrisma.prisma && globalForPrisma.prismaDatabaseUrl === databaseUrl;
+
 export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient(databaseUrl ? { datasources: { db: { url: databaseUrl } } } : undefined);
+  shouldReuseClient
+    ? globalForPrisma.prisma!
+    : new PrismaClient(databaseUrl ? { datasources: { db: { url: databaseUrl } } } : undefined);
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
+  globalForPrisma.prismaDatabaseUrl = databaseUrl;
 }
