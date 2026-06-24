@@ -102,6 +102,88 @@ export async function createWorkout(formData: FormData) {
   redirect(`/dashboard/workouts/${id}`);
 }
 
+export async function updateWorkout(formData: FormData) {
+  requireDatabase();
+
+  const id = requiredString(formData, "id");
+  const title = requiredString(formData, "title");
+  const sport = parseSport(requiredString(formData, "sport"));
+  const activeDate = requiredString(formData, "activeDate");
+
+  await prisma.workout.update({
+    where: { id },
+    data: {
+      title,
+      sport,
+      activeDate: dateOnly(activeDate),
+      status: "published",
+    },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/workouts/${id}`);
+  revalidatePath(`/workouts/${id}`);
+}
+
+function parseTags(value: string | null) {
+  return (value || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+export async function createMediaAsset(formData: FormData) {
+  requireDatabase();
+
+  const title = requiredString(formData, "title");
+  const requestedId = optionalString(formData, "id");
+  const playbackUrl = requiredString(formData, "playbackUrl");
+  const thumbnailUrl = requiredString(formData, "thumbnailUrl");
+  const durationSeconds = Number(requiredString(formData, "durationSeconds"));
+  const id = requestedId || slugify(title) || crypto.randomUUID();
+
+  await prisma.mediaAsset.create({
+    data: {
+      id,
+      title,
+      durationSeconds,
+      playbackUrl,
+      thumbnailUrl,
+      muxPlaybackId: optionalString(formData, "muxPlaybackId"),
+      muxAssetId: optionalString(formData, "muxAssetId"),
+      sourceDriveUrl: optionalString(formData, "sourceDriveUrl"),
+      tags: parseTags(optionalString(formData, "tags")),
+    },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/media");
+}
+
+export async function updateMediaAsset(formData: FormData) {
+  requireDatabase();
+
+  const id = requiredString(formData, "id");
+  const durationSeconds = Number(requiredString(formData, "durationSeconds"));
+
+  await prisma.mediaAsset.update({
+    where: { id },
+    data: {
+      title: requiredString(formData, "title"),
+      durationSeconds,
+      playbackUrl: requiredString(formData, "playbackUrl"),
+      thumbnailUrl: requiredString(formData, "thumbnailUrl"),
+      muxPlaybackId: optionalString(formData, "muxPlaybackId"),
+      muxAssetId: optionalString(formData, "muxAssetId"),
+      sourceDriveUrl: optionalString(formData, "sourceDriveUrl"),
+      tags: parseTags(optionalString(formData, "tags")),
+    },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/media");
+}
+
 export async function addWorkoutStep(formData: FormData) {
   requireDatabase();
 

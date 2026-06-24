@@ -6,6 +6,7 @@ import {
   addWorkoutStep,
   deleteWorkoutStep,
   moveWorkoutStep,
+  updateWorkout,
   updateWorkoutStep,
 } from "../../actions";
 import {
@@ -69,6 +70,50 @@ export default async function DashboardWorkoutPage({ params }: PageProps) {
               </Link>
             </div>
           </div>
+          <form action={updateWorkout} className="mt-5 grid gap-3 rounded-md bg-stone-50 p-3 md:grid-cols-[1fr_140px_160px_112px] md:items-end">
+            <input type="hidden" name="id" value={workout.id} />
+            <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+              Title
+              <input
+                name="title"
+                required
+                disabled={!canEdit}
+                defaultValue={workout.title}
+                className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+              />
+            </label>
+            <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+              Sport
+              <select
+                name="sport"
+                disabled={!canEdit}
+                defaultValue={workout.sport}
+                className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+              >
+                <option value="snow">Snow</option>
+                <option value="earth">Earth</option>
+                <option value="water">Water</option>
+                <option value="general">General</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+              Active date
+              <input
+                name="activeDate"
+                required
+                type="date"
+                disabled={!canEdit}
+                defaultValue={workout.activeDate}
+                className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+              />
+            </label>
+            <button
+              disabled={!canEdit}
+              className="h-10 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Save
+            </button>
+          </form>
         </header>
 
         {!canEdit ? (
