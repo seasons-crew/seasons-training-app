@@ -8,6 +8,8 @@ type PageProps = {
   searchParams: Promise<{ sneak?: string }>;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function WorkoutPage({ params, searchParams }: PageProps) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const workout = await getWorkout(id);

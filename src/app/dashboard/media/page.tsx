@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { listMediaAssets } from "@/lib/workout-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function MediaPage() {
   const mediaAssets = await listMediaAssets();
 

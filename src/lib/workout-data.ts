@@ -20,6 +20,15 @@ function shouldUseDatabase() {
   return isDatabaseConfigured();
 }
 
+function isMissingTableError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2021"
+  );
+}
+
 function toDateOnly(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -34,22 +43,30 @@ export async function listMediaAssets(): Promise<MediaAsset[]> {
     return mockMediaAssets;
   }
 
-  const prisma = await getPrisma();
-  const assets = await prisma.mediaAsset.findMany({
-    orderBy: { title: "asc" },
-  });
+  try {
+    const prisma = await getPrisma();
+    const assets = await prisma.mediaAsset.findMany({
+      orderBy: { title: "asc" },
+    });
 
-  return assets.map((asset) => ({
-    id: asset.id,
-    title: asset.title,
-    durationSeconds: asset.durationSeconds,
-    thumbnailUrl: asset.thumbnailUrl,
-    playbackUrl: asset.playbackUrl,
-    muxPlaybackId: asset.muxPlaybackId ?? undefined,
-    muxAssetId: asset.muxAssetId ?? undefined,
-    sourceDriveUrl: asset.sourceDriveUrl ?? undefined,
-    tags: asset.tags,
-  }));
+    return assets.map((asset) => ({
+      id: asset.id,
+      title: asset.title,
+      durationSeconds: asset.durationSeconds,
+      thumbnailUrl: asset.thumbnailUrl,
+      playbackUrl: asset.playbackUrl,
+      muxPlaybackId: asset.muxPlaybackId ?? undefined,
+      muxAssetId: asset.muxAssetId ?? undefined,
+      sourceDriveUrl: asset.sourceDriveUrl ?? undefined,
+      tags: asset.tags,
+    }));
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      return mockMediaAssets;
+    }
+
+    throw error;
+  }
 }
 
 export async function listWorkouts(): Promise<Workout[]> {
@@ -57,64 +74,25 @@ export async function listWorkouts(): Promise<Workout[]> {
     return mockWorkouts;
   }
 
-  const prisma = await getPrisma();
-  const workouts = await prisma.workout.findMany({
-    include: {
-      steps: {
-        orderBy: { position: "asc" },
+  try {
+    const prisma = await getPrisma();
+    const workouts = await prisma.workout.findMany({
+      include: {
+        steps: {
+          orderBy: { position: "asc" },
+        },
       },
-    },
-    orderBy: [{ activeDate: "desc" }, { sport: "asc" }],
-  });
+      orderBy: [{ activeDate: "desc" }, { sport: "asc" }],
+    });
 
-  return workouts.map((workout) => ({
-    id: workout.id,
-    title: workout.title,
-    sport: workout.sport,
-    activeDate: toDateOnly(workout.activeDate),
-    status: workout.status,
-    updatedAt: workout.updatedAt.toISOString(),
-    steps: workout.steps.map((step) => ({
-      id: step.id,
-      title: step.title,
-      mediaAssetId: step.mediaAssetId,
-      advanceMode: step.advanceMode,
-      timerStartMode: step.timerStartMode ?? undefined,
-      durationSeconds: step.durationSeconds ?? undefined,
-      manualButtonLabel: step.manualButtonLabel ?? undefined,
-    })),
-  }));
-}
-
-export async function getWorkout(id: string): Promise<HydratedWorkout | undefined> {
-  if (!shouldUseDatabase()) {
-    return getMockWorkout(id);
-  }
-
-  const prisma = await getPrisma();
-  const workout = await prisma.workout.findUnique({
-    where: { id },
-    include: {
-      steps: {
-        orderBy: { position: "asc" },
-        include: { mediaAsset: true },
-      },
-    },
-  });
-
-  if (!workout) {
-    return undefined;
-  }
-
-  return {
-    id: workout.id,
-    title: workout.title,
-    sport: workout.sport,
-    activeDate: toDateOnly(workout.activeDate),
-    status: workout.status,
-    updatedAt: workout.updatedAt.toISOString(),
-    steps: workout.steps.map(
-      (step): HydratedWorkoutStep => ({
+    return workouts.map((workout) => ({
+      id: workout.id,
+      title: workout.title,
+      sport: workout.sport,
+      activeDate: toDateOnly(workout.activeDate),
+      status: workout.status,
+      updatedAt: workout.updatedAt.toISOString(),
+      steps: workout.steps.map((step) => ({
         id: step.id,
         title: step.title,
         mediaAssetId: step.mediaAssetId,
@@ -122,20 +100,75 @@ export async function getWorkout(id: string): Promise<HydratedWorkout | undefine
         timerStartMode: step.timerStartMode ?? undefined,
         durationSeconds: step.durationSeconds ?? undefined,
         manualButtonLabel: step.manualButtonLabel ?? undefined,
-        media: {
-          id: step.mediaAsset.id,
-          title: step.mediaAsset.title,
-          durationSeconds: step.mediaAsset.durationSeconds,
-          thumbnailUrl: step.mediaAsset.thumbnailUrl,
-          playbackUrl: step.mediaAsset.playbackUrl,
-          muxPlaybackId: step.mediaAsset.muxPlaybackId ?? undefined,
-          muxAssetId: step.mediaAsset.muxAssetId ?? undefined,
-          sourceDriveUrl: step.mediaAsset.sourceDriveUrl ?? undefined,
-          tags: step.mediaAsset.tags,
+      })),
+    }));
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      return mockWorkouts;
+    }
+
+    throw error;
+  }
+}
+
+export async function getWorkout(id: string): Promise<HydratedWorkout | undefined> {
+  if (!shouldUseDatabase()) {
+    return getMockWorkout(id);
+  }
+
+  try {
+    const prisma = await getPrisma();
+    const workout = await prisma.workout.findUnique({
+      where: { id },
+      include: {
+        steps: {
+          orderBy: { position: "asc" },
+          include: { mediaAsset: true },
         },
-      }),
-    ),
-  };
+      },
+    });
+
+    if (!workout) {
+      return undefined;
+    }
+
+    return {
+      id: workout.id,
+      title: workout.title,
+      sport: workout.sport,
+      activeDate: toDateOnly(workout.activeDate),
+      status: workout.status,
+      updatedAt: workout.updatedAt.toISOString(),
+      steps: workout.steps.map(
+        (step): HydratedWorkoutStep => ({
+          id: step.id,
+          title: step.title,
+          mediaAssetId: step.mediaAssetId,
+          advanceMode: step.advanceMode,
+          timerStartMode: step.timerStartMode ?? undefined,
+          durationSeconds: step.durationSeconds ?? undefined,
+          manualButtonLabel: step.manualButtonLabel ?? undefined,
+          media: {
+            id: step.mediaAsset.id,
+            title: step.mediaAsset.title,
+            durationSeconds: step.mediaAsset.durationSeconds,
+            thumbnailUrl: step.mediaAsset.thumbnailUrl,
+            playbackUrl: step.mediaAsset.playbackUrl,
+            muxPlaybackId: step.mediaAsset.muxPlaybackId ?? undefined,
+            muxAssetId: step.mediaAsset.muxAssetId ?? undefined,
+            sourceDriveUrl: step.mediaAsset.sourceDriveUrl ?? undefined,
+            tags: step.mediaAsset.tags,
+          },
+        }),
+      ),
+    };
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      return getMockWorkout(id);
+    }
+
+    throw error;
+  }
 }
 
 export async function getTodayWorkoutId() {
@@ -143,16 +176,24 @@ export async function getTodayWorkoutId() {
     return getMockTodayWorkoutId();
   }
 
-  const prisma = await getPrisma();
-  const today = new Date(`${getTodayInLosAngeles()}T00:00:00.000Z`);
-  const workout = await prisma.workout.findFirst({
-    where: {
-      activeDate: today,
-      status: "published",
-    },
-    orderBy: { sport: "asc" },
-    select: { id: true },
-  });
+  try {
+    const prisma = await getPrisma();
+    const today = new Date(`${getTodayInLosAngeles()}T00:00:00.000Z`);
+    const workout = await prisma.workout.findFirst({
+      where: {
+        activeDate: today,
+        status: "published",
+      },
+      orderBy: { sport: "asc" },
+      select: { id: true },
+    });
 
-  return workout?.id;
+    return workout?.id;
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      return getMockTodayWorkoutId();
+    }
+
+    throw error;
+  }
 }

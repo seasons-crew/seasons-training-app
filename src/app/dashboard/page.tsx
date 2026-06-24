@@ -5,6 +5,8 @@ import { appTimeZone } from "@/lib/date";
 import { createWorkout } from "./actions";
 import { isDatabaseConfigured, listMediaAssets, listWorkouts } from "@/lib/workout-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const [workouts, mediaAssets] = await Promise.all([
     listWorkouts(),
