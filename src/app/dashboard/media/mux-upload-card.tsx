@@ -133,14 +133,14 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <section>
-      <div className="flex flex-col gap-3">
+    <section className="min-w-0 overflow-hidden">
+      <div className="min-w-0 flex flex-col gap-3">
         <div>
-          <div className="flex items-center gap-2 text-lg font-semibold">
+          <div className="min-w-0 flex items-center gap-2 text-lg font-semibold">
             <UploadCloud size={20} />
             Upload to Mux
           </div>
-          <p className="mt-1 max-w-2xl text-sm text-stone-600">
+          <p className="mt-1 max-w-full text-wrap-pretty text-sm text-stone-600">
             Bulk uploads create blank media records. Add titles from the media list once the videos are in the library.
           </p>
         </div>
@@ -154,19 +154,19 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
         </button>
       </div>
 
-      <label className="mt-5 grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+      <label className="mt-5 grid min-w-0 gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
         Tags for all files
         <input
           value={tags}
           onChange={(event) => setTags(event.target.value)}
           disabled={!enabled}
           placeholder="snow, warmup"
-          className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+          className="h-10 min-w-0 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
         />
       </label>
 
       <div
-        className="mt-4 flex min-h-44 flex-col items-center justify-center gap-3 rounded-md border border-dashed border-stone-300 bg-stone-50 p-6 text-center"
+        className="mt-4 flex min-h-44 min-w-0 flex-col items-center justify-center gap-3 rounded-md border border-dashed border-stone-300 bg-stone-50 p-6 text-center"
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
           event.preventDefault();
@@ -189,7 +189,7 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
             event.currentTarget.value = "";
           }}
         />
-        <div className="text-sm font-medium text-stone-600">{message}</div>
+        <div className="max-w-full text-wrap-pretty text-sm font-medium text-stone-600">{message}</div>
         <button
           type="button"
           disabled={!enabled}
@@ -201,12 +201,12 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
       </div>
 
       {uploads.length ? (
-        <div className="mt-4 grid gap-2">
+        <div className="mt-4 grid min-w-0 gap-2">
           {uploads.map((upload) => (
-            <div key={upload.id} className="rounded-md border border-stone-200 bg-stone-50 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="max-w-full truncate font-semibold text-stone-800">{upload.name}</span>
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+            <div key={upload.id} className="min-w-0 overflow-hidden rounded-md border border-stone-200 bg-stone-50 p-3">
+              <div className="flex min-w-0 items-start justify-between gap-2 text-sm">
+                <span className="min-w-0 flex-1 truncate font-semibold text-stone-800" title={upload.name}>{upload.name}</span>
+                <span className="shrink-0 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
                   {upload.status}
                 </span>
               </div>
@@ -216,9 +216,9 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
                   style={{ width: `${upload.progress}%` }}
                 />
               </div>
-              <div className="mt-1 flex items-center justify-between gap-2 text-xs text-stone-500">
-                <span>{upload.message}</span>
-                <span>{upload.progress}%</span>
+              <div className="mt-1 flex min-w-0 items-center justify-between gap-2 text-xs text-stone-500">
+                <span className="min-w-0 truncate">{upload.message}</span>
+                <span className="shrink-0 tabular-nums">{upload.progress}%</span>
               </div>
             </div>
           ))}
