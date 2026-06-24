@@ -39,7 +39,7 @@ export function WorkoutEditModal({
       </button>
       <dialog
         ref={dialogRef}
-        className="w-[min(520px,calc(100vw-32px))] rounded-md border border-stone-200 bg-white p-0 text-stone-950 shadow-2xl backdrop:bg-stone-950/40"
+        className="fixed left-1/2 top-1/2 max-h-[calc(100dvh-32px)] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-md border border-stone-200 bg-white p-0 text-stone-950 shadow-2xl backdrop:bg-stone-950/40"
       >
         <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
           <h2 className="text-lg font-semibold">Edit workout</h2>
@@ -52,7 +52,7 @@ export function WorkoutEditModal({
             <X size={16} />
           </button>
         </div>
-        <form action={action} className="grid gap-4 p-5">
+        <form action={action} className="grid max-h-[calc(100dvh-120px)] gap-4 overflow-y-auto p-5">
           <input type="hidden" name="id" value={id} />
           <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
             Title
