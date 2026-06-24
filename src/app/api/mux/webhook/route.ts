@@ -56,8 +56,6 @@ export async function POST(request: Request) {
     await prisma.mediaAsset.updateMany({
       where: {
         OR: [
-          { muxUploadId: data.id },
-          { muxUploadId: data.upload_id },
           { id: data.meta?.external_id },
         ],
       },
@@ -97,8 +95,6 @@ export async function POST(request: Request) {
         OR: [
           { id: data.meta?.external_id },
           { muxAssetId: data.id },
-          { muxUploadId: data.id },
-          { muxUploadId: data.upload_id },
         ],
       },
       data: { status: "errored" },

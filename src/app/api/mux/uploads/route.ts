@@ -106,7 +106,6 @@ export async function POST(request: Request) {
         durationSeconds: 0,
         thumbnailUrl: "",
         playbackUrl: "",
-        muxUploadId: upload.id,
         status: "waiting_for_upload",
         tags: parseTags(body.tags),
       },
