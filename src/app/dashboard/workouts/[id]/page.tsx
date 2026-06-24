@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, GripVertical, Plus, Trash2 } from "lucide-react";
 import { notFound } from "next/navigation";
-import { getWorkout } from "@/lib/workouts";
+import { getWorkout } from "@/lib/workout-data";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -10,7 +10,7 @@ type PageProps = {
 
 export default async function DashboardWorkoutPage({ params }: PageProps) {
   const { id } = await params;
-  const workout = getWorkout(id);
+  const workout = await getWorkout(id);
 
   if (!workout) {
     notFound();

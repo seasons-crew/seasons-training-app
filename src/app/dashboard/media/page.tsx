@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { mediaAssets } from "@/lib/workouts";
+import { listMediaAssets } from "@/lib/workout-data";
 
-export default function MediaPage() {
+export default async function MediaPage() {
+  const mediaAssets = await listMediaAssets();
+
   return (
     <main className="min-h-dvh bg-stone-50 text-stone-950">
       <div className="mx-auto w-full max-w-6xl px-6 py-8">

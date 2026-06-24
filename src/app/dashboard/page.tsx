@@ -2,9 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, Dumbbell, Film, LogOut } from "lucide-react";
 import { appTimeZone } from "@/lib/date";
-import { mediaAssets, workouts } from "@/lib/workouts";
+import { listMediaAssets, listWorkouts } from "@/lib/workout-data";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [workouts, mediaAssets] = await Promise.all([
+    listWorkouts(),
+    listMediaAssets(),
+  ]);
+
   return (
     <main className="min-h-dvh bg-stone-50 text-stone-950">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8">

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getWorkoutAvailability } from "@/lib/date";
-import { getWorkout } from "@/lib/workouts";
+import { getWorkout } from "@/lib/workout-data";
 import { WorkoutPlayer } from "./workout-player";
 
 type PageProps = {
@@ -10,7 +10,7 @@ type PageProps = {
 
 export default async function WorkoutPage({ params, searchParams }: PageProps) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const workout = getWorkout(id);
+  const workout = await getWorkout(id);
 
   if (!workout) {
     notFound();
