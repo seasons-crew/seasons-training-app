@@ -1,7 +1,7 @@
 "use client";
 
 import { createUpload } from "@mux/upchunk";
-import { RefreshCw, UploadCloud } from "lucide-react";
+import { UploadCloud } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
@@ -158,14 +158,6 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
             Bulk uploads create blank media records. Add titles from the media list once the videos are in the library.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void syncProcessingMedia()}
-          className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-950 hover:text-stone-950 active:scale-[0.96]"
-        >
-          <RefreshCw size={15} />
-          Refresh list
-        </button>
       </div>
 
       <label className="mt-5 grid min-w-0 gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">

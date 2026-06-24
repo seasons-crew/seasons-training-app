@@ -4,6 +4,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { createMediaAsset, updateMediaAsset } from "../actions";
 import { MediaAddTabs } from "./media-add-tabs";
 import { MuxUploadCard } from "./mux-upload-card";
+import { MediaSyncButton } from "./media-sync-button";
 import { isDatabaseConfigured, listMediaAssets } from "@/lib/workout-data";
 
 export const dynamic = "force-dynamic";
@@ -23,11 +24,14 @@ export default async function MediaPage() {
           <ArrowLeft size={16} />
           Dashboard
         </Link>
-        <header className="mt-6 border-b border-stone-200 pb-6">
-          <h1 className="text-4xl font-semibold">Media library</h1>
-          <p className="mt-2 text-stone-600">
-            Upload workout videos to Mux, track processing status, and keep manual URL entry as a fallback.
-          </p>
+        <header className="mt-6 flex flex-col gap-4 border-b border-stone-200 pb-6 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="text-4xl font-semibold">Media library</h1>
+            <p className="mt-2 text-stone-600">
+              Upload workout videos to Mux, track processing status, and keep manual URL entry as a fallback.
+            </p>
+          </div>
+          <MediaSyncButton enabled={muxUploadEnabled} />
         </header>
 
         {!canEdit ? (
