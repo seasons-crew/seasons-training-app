@@ -20,13 +20,20 @@ function shouldUseDatabase() {
   return isDatabaseConfigured();
 }
 
-function isMissingTableError(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "P2021"
-  );
+function isRecoverableDatabaseReadError(error: unknown) {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  if ("code" in error) {
+    return ["P1001", "P1012", "P2021", "P2024"].includes(String(error.code));
+  }
+
+  if ("name" in error) {
+    return String(error.name).startsWith("PrismaClient");
+  }
+
+  return false;
 }
 
 function toDateOnly(date: Date) {
@@ -61,7 +68,7 @@ export async function listMediaAssets(): Promise<MediaAsset[]> {
       tags: asset.tags,
     }));
   } catch (error) {
-    if (isMissingTableError(error)) {
+    if (isRecoverableDatabaseReadError(error)) {
       return mockMediaAssets;
     }
 
@@ -103,7 +110,7 @@ export async function listWorkouts(): Promise<Workout[]> {
       })),
     }));
   } catch (error) {
-    if (isMissingTableError(error)) {
+    if (isRecoverableDatabaseReadError(error)) {
       return mockWorkouts;
     }
 
@@ -163,7 +170,7 @@ export async function getWorkout(id: string): Promise<HydratedWorkout | undefine
       ),
     };
   } catch (error) {
-    if (isMissingTableError(error)) {
+    if (isRecoverableDatabaseReadError(error)) {
       return getMockWorkout(id);
     }
 
@@ -190,7 +197,7 @@ export async function getTodayWorkoutId() {
 
     return workout?.id;
   } catch (error) {
-    if (isMissingTableError(error)) {
+    if (isRecoverableDatabaseReadError(error)) {
       return getMockTodayWorkoutId();
     }
 
