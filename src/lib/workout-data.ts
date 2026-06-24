@@ -71,7 +71,7 @@ export async function listMediaAssets(): Promise<MediaAsset[]> {
     }));
   } catch (error) {
     if (isRecoverableDatabaseReadError(error)) {
-      return mockMediaAssets;
+      return [];
     }
 
     throw error;
@@ -113,7 +113,7 @@ export async function listWorkouts(): Promise<Workout[]> {
     }));
   } catch (error) {
     if (isRecoverableDatabaseReadError(error)) {
-      return mockWorkouts;
+      return [];
     }
 
     throw error;
@@ -175,7 +175,7 @@ export async function getWorkout(id: string): Promise<HydratedWorkout | undefine
     };
   } catch (error) {
     if (isRecoverableDatabaseReadError(error)) {
-      return getMockWorkout(id);
+      return undefined;
     }
 
     throw error;
@@ -202,7 +202,7 @@ export async function getTodayWorkoutId() {
     return workout?.id;
   } catch (error) {
     if (isRecoverableDatabaseReadError(error)) {
-      return getMockTodayWorkoutId();
+      return undefined;
     }
 
     throw error;
