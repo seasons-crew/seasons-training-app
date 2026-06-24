@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!process.env.DATABASE_URL) {
+    if (!process.env.DATABASE_URL && !process.env.DATABASE_URL_UNPOOLED) {
       return NextResponse.json(
         { error: "DATABASE_URL is required for uploads." },
         { status: 500 },

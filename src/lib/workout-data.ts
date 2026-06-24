@@ -13,7 +13,7 @@ import {
 } from "./workouts";
 
 export function isDatabaseConfigured() {
-  return Boolean(process.env.DATABASE_URL);
+  return Boolean(process.env.DATABASE_URL || process.env.DATABASE_URL_UNPOOLED);
 }
 
 function shouldUseDatabase() {

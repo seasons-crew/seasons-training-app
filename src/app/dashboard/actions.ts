@@ -14,7 +14,7 @@ const advanceModes: StepAdvanceMode[] = ["video_end", "timer", "manual"];
 const timerStartModes: TimerStartMode[] = ["auto", "tap"];
 
 function requireDatabase() {
-  if (!process.env.DATABASE_URL) {
+  if (!process.env.DATABASE_URL && !process.env.DATABASE_URL_UNPOOLED) {
     throw new Error("DATABASE_URL is required for dashboard edits.");
   }
 }
