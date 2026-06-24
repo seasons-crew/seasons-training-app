@@ -119,8 +119,8 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <section className="mt-6 rounded-md border border-stone-200 bg-white p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <section>
+      <div className="flex flex-col gap-3">
         <div>
           <div className="flex items-center gap-2 text-lg font-semibold">
             <UploadCloud size={20} />
@@ -133,10 +133,10 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
         <button
           type="button"
           onClick={() => router.refresh()}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 hover:border-stone-950 hover:text-stone-950"
+          className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-950 hover:text-stone-950 active:scale-[0.96]"
         >
           <RefreshCw size={15} />
-          Refresh
+          Refresh list
         </button>
       </div>
 

@@ -172,8 +172,8 @@ export async function updateMediaAsset(formData: FormData) {
     data: {
       title: requiredString(formData, "title"),
       durationSeconds,
-      playbackUrl: requiredString(formData, "playbackUrl"),
-      thumbnailUrl: requiredString(formData, "thumbnailUrl"),
+      playbackUrl: String(formData.get("playbackUrl") ?? ""),
+      thumbnailUrl: String(formData.get("thumbnailUrl") ?? ""),
       muxPlaybackId: optionalString(formData, "muxPlaybackId"),
       muxAssetId: optionalString(formData, "muxAssetId"),
       sourceDriveUrl: optionalString(formData, "sourceDriveUrl"),

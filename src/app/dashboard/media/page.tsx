@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { createMediaAsset, updateMediaAsset } from "../actions";
+import { MediaAddTabs } from "./media-add-tabs";
 import { MuxUploadCard } from "./mux-upload-card";
 import { isDatabaseConfigured, listMediaAssets } from "@/lib/workout-data";
 
@@ -35,47 +36,58 @@ export default async function MediaPage() {
           </section>
         ) : null}
 
-        <MuxUploadCard enabled={muxUploadEnabled} />
-
-        <section className="mt-6 rounded-md border border-stone-200 bg-white p-5">
-          <h2 className="text-lg font-semibold">Add media manually</h2>
-          <MediaForm canEdit={canEdit} mode="create" />
-        </section>
-
-        <section className="mt-6 grid gap-4 lg:grid-cols-2">
-          {mediaAssets.map((asset) => (
-            <article
-              key={asset.id}
-              className="overflow-hidden rounded-md border border-stone-200 bg-white"
-            >
-              {asset.thumbnailUrl ? (
-                <img
-                  src={asset.thumbnailUrl}
-                  alt=""
-                  className="aspect-video w-full object-cover"
-                />
-              ) : (
-                <div className="flex aspect-video w-full items-center justify-center bg-stone-100 text-sm font-semibold text-stone-400">
-                  Processing
-                </div>
-              )}
-              <div className="p-4">
-                <div className="flex flex-col gap-1 border-b border-stone-100 pb-4">
-                  <h2 className="font-semibold">{asset.title || "Untitled upload"}</h2>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
-                    <span>{asset.durationSeconds}s - {asset.tags.join(", ") || "untagged"}</span>
-                    {asset.status ? (
-                      <span className="rounded-full border border-stone-200 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
-                        {asset.status.replaceAll("_", " ")}
-                      </span>
-                    ) : null}
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+          <section className="grid gap-4 lg:grid-cols-2">
+            {mediaAssets.map((asset) => (
+              <article
+                key={asset.id}
+                className="overflow-hidden rounded-md bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]"
+              >
+                {asset.thumbnailUrl ? (
+                  <img
+                    src={asset.thumbnailUrl}
+                    alt=""
+                    className="aspect-video w-full object-cover outline outline-1 outline-black/10"
+                  />
+                ) : (
+                  <div className="flex aspect-video w-full items-center justify-center bg-stone-100 text-sm font-semibold text-stone-400">
+                    Processing
                   </div>
+                )}
+                <div className="p-4">
+                  <div className="flex flex-col gap-1 border-b border-stone-100 pb-4">
+                    <h2 className="[text-wrap:balance] font-semibold">{asset.title || "Untitled upload"}</h2>
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
+                      <span className="tabular-nums">{asset.durationSeconds}s</span>
+                      <span>{asset.tags.join(", ") || "untagged"}</span>
+                      {asset.status ? (
+                        <span className="rounded-full border border-stone-200 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                          {asset.status.replaceAll("_", " ")}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <MediaForm asset={asset} canEdit={canEdit} mode="update" />
                 </div>
-                <MediaForm asset={asset} canEdit={canEdit} mode="update" />
-              </div>
-            </article>
-          ))}
-        </section>
+              </article>
+            ))}
+          </section>
+
+          <aside className="lg:sticky lg:top-6">
+            <MediaAddTabs
+              bulk={<MuxUploadCard enabled={muxUploadEnabled} />}
+              manual={
+                <div>
+                  <h2 className="text-lg font-semibold">Add media manually</h2>
+                  <p className="mt-1 text-sm text-stone-600">
+                    Paste playback details only when a video already lives outside the uploader.
+                  </p>
+                  <MediaForm canEdit={canEdit} mode="create" />
+                </div>
+              }
+            />
+          </aside>
+        </div>
       </div>
     </main>
   );
@@ -92,21 +104,22 @@ function MediaForm({
   canEdit: boolean;
   mode: "create" | "update";
 }) {
+  const isCreate = mode === "create";
+
   return (
     <form
-      action={mode === "create" ? createMediaAsset : updateMediaAsset}
-      className="mt-4 grid gap-3 lg:grid-cols-2"
+      action={isCreate ? createMediaAsset : updateMediaAsset}
+      className="mt-4 grid gap-3"
     >
       {asset ? <input type="hidden" name="id" value={asset.id} /> : null}
-      {mode === "create" ? (
-        <Field label="URL id">
-          <input
-            name="id"
-            disabled={!canEdit}
-            placeholder="optional"
-            className={inputClass}
-          />
-        </Field>
+      {!isCreate ? (
+        <>
+          <input type="hidden" name="playbackUrl" value={asset?.playbackUrl || ""} />
+          <input type="hidden" name="thumbnailUrl" value={asset?.thumbnailUrl || ""} />
+          <input type="hidden" name="muxPlaybackId" value={asset?.muxPlaybackId || ""} />
+          <input type="hidden" name="muxAssetId" value={asset?.muxAssetId || ""} />
+          <input type="hidden" name="sourceDriveUrl" value={asset?.sourceDriveUrl || ""} />
+        </>
       ) : null}
       <Field label="Title">
         <input
@@ -129,53 +142,28 @@ function MediaForm({
           className={inputClass}
         />
       </Field>
-      <Field label="Playback URL">
-        <input
-          name="playbackUrl"
-          required
-          disabled={!canEdit}
-          defaultValue={asset?.playbackUrl}
-          placeholder="https://stream.mux.com/...m3u8"
-          className={inputClass}
-        />
-      </Field>
-      <Field label="Thumbnail URL">
-        <input
-          name="thumbnailUrl"
-          required
-          disabled={!canEdit}
-          defaultValue={asset?.thumbnailUrl}
-          placeholder="https://image.mux.com/.../thumbnail.jpg"
-          className={inputClass}
-        />
-      </Field>
-      <Field label="Mux playback id">
-        <input
-          name="muxPlaybackId"
-          disabled={!canEdit}
-          defaultValue={asset?.muxPlaybackId}
-          placeholder="optional"
-          className={inputClass}
-        />
-      </Field>
-      <Field label="Mux asset id">
-        <input
-          name="muxAssetId"
-          disabled={!canEdit}
-          defaultValue={asset?.muxAssetId}
-          placeholder="optional"
-          className={inputClass}
-        />
-      </Field>
-      <Field label="Source Drive URL">
-        <input
-          name="sourceDriveUrl"
-          disabled={!canEdit}
-          defaultValue={asset?.sourceDriveUrl}
-          placeholder="optional"
-          className={inputClass}
-        />
-      </Field>
+      {isCreate ? (
+        <>
+          <Field label="Playback URL">
+            <input
+              name="playbackUrl"
+              required
+              disabled={!canEdit}
+              placeholder="https://stream.mux.com/...m3u8"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Thumbnail URL">
+            <input
+              name="thumbnailUrl"
+              required
+              disabled={!canEdit}
+              placeholder="https://image.mux.com/.../thumbnail.jpg"
+              className={inputClass}
+            />
+          </Field>
+        </>
+      ) : null}
       <Field label="Tags">
         <input
           name="tags"
@@ -187,10 +175,10 @@ function MediaForm({
       </Field>
       <button
         disabled={!canEdit}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 lg:self-end"
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white transition-transform disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.96]"
       >
         <Plus size={16} />
-        {mode === "create" ? "Add media" : "Save media"}
+        {isCreate ? "Add media" : "Save"}
       </button>
     </form>
   );
