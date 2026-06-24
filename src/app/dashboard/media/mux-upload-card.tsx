@@ -55,6 +55,20 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
     );
   }
 
+  async function syncProcessingMedia() {
+    setMessage("Checking Mux processing...");
+
+    const response = await fetch("/api/mux/sync", { method: "POST" });
+
+    if (!response.ok) {
+      setMessage("Could not sync Mux processing yet.");
+      return;
+    }
+
+    setMessage("Media list refreshed.");
+    router.refresh();
+  }
+
   async function createUploadUrl(file: File, uploadId: string) {
     updateUpload(uploadId, { status: "creating", message: "Creating Mux upload" });
 
@@ -109,7 +123,7 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
         message: "Mux processing",
       });
       setMessage("Uploads complete. Mux is processing the videos.");
-      router.refresh();
+      void syncProcessingMedia();
     });
 
     upload.on("error", (event) => {
@@ -146,7 +160,7 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
         </div>
         <button
           type="button"
-          onClick={() => router.refresh()}
+          onClick={() => void syncProcessingMedia()}
           className="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-950 hover:text-stone-950 active:scale-[0.96]"
         >
           <RefreshCw size={15} />

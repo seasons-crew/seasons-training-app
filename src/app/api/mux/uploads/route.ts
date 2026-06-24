@@ -15,6 +15,14 @@ function slugify(input: string) {
     .slice(0, 48);
 }
 
+function titleFromFilename(filename: string) {
+  return filename
+    .replace(/\.[^.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() || "Untitled upload";
+}
+
 function parseTags(value: unknown) {
   if (Array.isArray(value)) {
     return value.map((tag) => String(tag).trim()).filter(Boolean);
@@ -56,7 +64,7 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const filename = typeof body.filename === "string" && body.filename.trim() ? body.filename.trim() : "upload";
-    const title = "";
+    const title = titleFromFilename(filename);
     const id = `${slugify(filename) || "upload"}-${crypto.randomUUID().slice(0, 8)}`;
     const auth = Buffer.from(`${tokenId}:${tokenSecret}`).toString("base64");
 
@@ -110,8 +118,9 @@ export async function POST(request: Request) {
       },
     });
     await prisma.$executeRawUnsafe(
-      'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
+      'UPDATE "MediaAsset" SET "status" = $1, "muxUploadId" = $2 WHERE "id" = $3',
       "waiting_for_upload",
+      upload.id,
       id,
     );
 
