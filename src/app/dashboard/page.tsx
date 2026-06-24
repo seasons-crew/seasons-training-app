@@ -1,14 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarDays, Dumbbell, Film, LogOut } from "lucide-react";
+import { CalendarDays, Dumbbell, Film, LogOut, Plus } from "lucide-react";
 import { appTimeZone } from "@/lib/date";
-import { listMediaAssets, listWorkouts } from "@/lib/workout-data";
+import { createWorkout } from "./actions";
+import { isDatabaseConfigured, listMediaAssets, listWorkouts } from "@/lib/workout-data";
 
 export default async function DashboardPage() {
   const [workouts, mediaAssets] = await Promise.all([
     listWorkouts(),
     listMediaAssets(),
   ]);
+  const canEdit = isDatabaseConfigured();
 
   return (
     <main className="min-h-dvh bg-stone-50 text-stone-950">
@@ -48,13 +50,47 @@ export default async function DashboardPage() {
           />
         </section>
 
+        {!canEdit ? (
+          <section className="rounded-md border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+            Dashboard editing is ready, but it needs a Vercel Marketplace Postgres
+            database first. Add <code className="font-mono">DATABASE_URL</code>,
+            then run migrations and seed data.
+          </section>
+        ) : null}
+
         <section className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="rounded-md border border-stone-200 bg-white">
-            <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
-              <h2 className="text-lg font-semibold">Scheduled workouts</h2>
-              <button className="rounded-md bg-stone-950 px-4 py-2 text-sm font-semibold text-white">
-                New workout
-              </button>
+            <div className="border-b border-stone-200 px-5 py-4">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold">Scheduled workouts</h2>
+              </div>
+              <form action={createWorkout} className="mt-4 grid gap-3 rounded-md bg-stone-50 p-3 md:grid-cols-[1.4fr_120px_150px_1fr_104px] md:items-end">
+                <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                  Title
+                  <input name="title" required disabled={!canEdit} placeholder="Snow Legs" className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
+                </label>
+                <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                  Sport
+                  <select name="sport" disabled={!canEdit} className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950">
+                    <option value="snow">Snow</option>
+                    <option value="earth">Earth</option>
+                    <option value="water">Water</option>
+                    <option value="general">General</option>
+                  </select>
+                </label>
+                <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                  Active date
+                  <input name="activeDate" required type="date" disabled={!canEdit} className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
+                </label>
+                <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                  URL id
+                  <input name="id" disabled={!canEdit} placeholder="optional" className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
+                </label>
+                <button disabled={!canEdit} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
+                  <Plus size={16} />
+                  Create
+                </button>
+              </form>
             </div>
             <div className="divide-y divide-stone-100">
               {workouts.map((workout) => (

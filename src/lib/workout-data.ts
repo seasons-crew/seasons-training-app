@@ -12,8 +12,12 @@ import {
   workouts as mockWorkouts,
 } from "./workouts";
 
-function shouldUseDatabase() {
+export function isDatabaseConfigured() {
   return Boolean(process.env.DATABASE_URL);
+}
+
+function shouldUseDatabase() {
+  return isDatabaseConfigured();
 }
 
 function toDateOnly(date: Date) {
