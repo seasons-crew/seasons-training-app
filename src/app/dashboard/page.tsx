@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarDays, Dumbbell, Film, LockKeyhole } from "lucide-react";
+import { CalendarDays, Dumbbell, Film, LogOut } from "lucide-react";
 import { appTimeZone } from "@/lib/date";
 import { mediaAssets, workouts } from "@/lib/workouts";
 
@@ -17,10 +17,12 @@ export default function DashboardPage() {
               Workout dashboard
             </h1>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-600">
-            <LockKeyhole size={16} />
-            Shared password gate coming next
-          </div>
+          <form action="/api/dashboard/logout" method="post">
+            <button className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-600 transition hover:border-stone-300 hover:text-stone-950">
+              <LogOut size={16} />
+              Sign out
+            </button>
+          </form>
         </header>
 
         <section className="grid gap-4 md:grid-cols-3">
