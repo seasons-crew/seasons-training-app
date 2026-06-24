@@ -85,8 +85,7 @@ export async function createWorkout(formData: FormData) {
   const title = requiredString(formData, "title");
   const sport = parseSport(requiredString(formData, "sport"));
   const activeDate = requiredString(formData, "activeDate");
-  const requestedId = optionalString(formData, "id");
-  const id = requestedId || `${sport}-${activeDate}-${slugify(title)}`;
+  const id = `${sport}-${activeDate}-${crypto.randomUUID().slice(0, 8)}`;
 
   await prisma.workout.create({
     data: {
@@ -190,8 +189,17 @@ export async function addWorkoutStep(formData: FormData) {
   requireDatabase();
 
   const workoutId = requiredString(formData, "workoutId");
-  const title = requiredString(formData, "title");
   const mediaAssetId = requiredString(formData, "mediaAssetId");
+  const mediaAsset = await prisma.mediaAsset.findUnique({
+    where: { id: mediaAssetId },
+    select: { title: true, durationSeconds: true },
+  });
+
+  if (!mediaAsset) {
+    throw new Error("Media asset is required.");
+  }
+
+  const title = mediaAsset.title;
   const advanceMode = parseAdvanceMode(requiredString(formData, "advanceMode"));
   const timerStartMode = parseTimerStartMode(
     optionalString(formData, "timerStartMode"),
@@ -228,8 +236,17 @@ export async function updateWorkoutStep(formData: FormData) {
 
   const id = requiredString(formData, "id");
   const workoutId = requiredString(formData, "workoutId");
-  const title = requiredString(formData, "title");
   const mediaAssetId = requiredString(formData, "mediaAssetId");
+  const mediaAsset = await prisma.mediaAsset.findUnique({
+    where: { id: mediaAssetId },
+    select: { title: true, durationSeconds: true },
+  });
+
+  if (!mediaAsset) {
+    throw new Error("Media asset is required.");
+  }
+
+  const title = mediaAsset.title;
   const advanceMode = parseAdvanceMode(requiredString(formData, "advanceMode"));
   const timerStartMode = parseTimerStartMode(
     optionalString(formData, "timerStartMode"),
@@ -313,6 +330,34 @@ export async function moveWorkoutStep(formData: FormData) {
       where: { id },
       data: { position: targetPosition },
     });
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/workouts/${workoutId}`);
+  revalidatePath(`/workouts/${workoutId}`);
+}
+
+
+export async function reorderWorkoutSteps(formData: FormData) {
+  requireDatabase();
+
+  const workoutId = requiredString(formData, "workoutId");
+  const stepIds = JSON.parse(requiredString(formData, "stepIds")) as string[];
+
+  await prisma.$transaction(async (tx) => {
+    for (const [position, stepId] of stepIds.entries()) {
+      await tx.workoutStep.updateMany({
+        where: { id: stepId, workoutId },
+        data: { position: position + 1000 },
+      });
+    }
+
+    for (const [position, stepId] of stepIds.entries()) {
+      await tx.workoutStep.updateMany({
+        where: { id: stepId, workoutId },
+        data: { position },
+      });
+    }
   });
 
   revalidatePath("/dashboard");

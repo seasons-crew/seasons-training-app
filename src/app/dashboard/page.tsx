@@ -66,7 +66,7 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold">Scheduled workouts</h2>
               </div>
-              <form action={createWorkout} className="mt-4 grid gap-3 rounded-md bg-stone-50 p-3 md:grid-cols-[1.4fr_120px_150px_1fr_104px] md:items-end">
+              <form action={createWorkout} className="mt-4 grid gap-3 rounded-md bg-stone-50 p-3 md:grid-cols-[1.4fr_120px_150px_104px] md:items-end">
                 <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
                   Title
                   <input name="title" required disabled={!canEdit} placeholder="Snow Legs" className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
@@ -83,10 +83,6 @@ export default async function DashboardPage() {
                 <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
                   Active date
                   <input name="activeDate" required type="date" disabled={!canEdit} className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
-                </label>
-                <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
-                  URL id
-                  <input name="id" disabled={!canEdit} placeholder="optional" className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
                 </label>
                 <button disabled={!canEdit} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
                   <Plus size={16} />
