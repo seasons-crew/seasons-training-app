@@ -30,7 +30,7 @@ export default async function DashboardWorkoutPage({ params }: PageProps) {
     listMediaAssets(),
   ]);
   const canEdit = isDatabaseConfigured();
-  const readyMediaAssets = mediaAssets.filter((asset) => asset.status === "ready" && asset.playbackUrl);
+  const readyMediaAssets = mediaAssets.filter((asset) => asset.playbackUrl);
 
   if (!workout) {
     notFound();
