@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SportCategory {
+  snow
+  earth
+  water
+  general
+}
+
+enum WorkoutStatus {
+  draft
+  published
+  archived
+}
+
+enum StepAdvanceMode {
+  video_end
+  timer
+  manual
+}
+
+enum TimerStartMode {
+  auto
+  tap
+}
+
+model MediaAsset {
+  id              String        @id
+  title           String
+  durationSeconds Int
+  thumbnailUrl    String
+  playbackUrl     String
+  muxPlaybackId   String?
+  muxAssetId      String?
+  sourceDriveUrl  String?
+  tags            String[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  workoutSteps    WorkoutStep[]
+
+  @@index([title])
+}
+
+model Workout {
+  id         String         @id
+  title      String
+  sport      SportCategory
+  activeDate DateTime       @db.Date
+  status     WorkoutStatus  @default(published)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  steps      WorkoutStep[]
+
+  @@index([activeDate])
+  @@index([sport, activeDate])
+}
+
+model WorkoutStep {
+  id                String           @id
+  workoutId         String
+  mediaAssetId      String
+  position          Int
+  title             String
+  advanceMode       StepAdvanceMode
+  timerStartMode    TimerStartMode?
+  durationSeconds   Int?
+  manualButtonLabel String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  mediaAsset        MediaAsset       @relation(fields: [mediaAssetId], references: [id])
+  workout           Workout          @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@unique([workoutId, position])
+  @@index([mediaAssetId])
+}
