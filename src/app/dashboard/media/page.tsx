@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { createMediaAsset, updateMediaAsset } from "../actions";
+import { MuxUploadCard } from "./mux-upload-card";
 import { isDatabaseConfigured, listMediaAssets } from "@/lib/workout-data";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function MediaPage() {
   const mediaAssets = await listMediaAssets();
   const canEdit = isDatabaseConfigured();
+  const muxUploadEnabled = canEdit && Boolean(process.env.MUX_TOKEN_ID && process.env.MUX_TOKEN_SECRET);
 
   return (
     <main className="min-h-dvh bg-stone-50 text-stone-950">
@@ -23,7 +25,7 @@ export default async function MediaPage() {
         <header className="mt-6 border-b border-stone-200 pb-6">
           <h1 className="text-4xl font-semibold">Media library</h1>
           <p className="mt-2 text-stone-600">
-            Add Mux playback URLs now. Direct upload can slot in later.
+            Upload workout videos to Mux, track processing status, and keep manual URL entry as a fallback.
           </p>
         </header>
 
@@ -33,8 +35,10 @@ export default async function MediaPage() {
           </section>
         ) : null}
 
+        <MuxUploadCard enabled={muxUploadEnabled} />
+
         <section className="mt-6 rounded-md border border-stone-200 bg-white p-5">
-          <h2 className="text-lg font-semibold">Add media asset</h2>
+          <h2 className="text-lg font-semibold">Add media manually</h2>
           <MediaForm canEdit={canEdit} mode="create" />
         </section>
 
@@ -44,17 +48,28 @@ export default async function MediaPage() {
               key={asset.id}
               className="overflow-hidden rounded-md border border-stone-200 bg-white"
             >
-              <img
-                src={asset.thumbnailUrl}
-                alt=""
-                className="aspect-video w-full object-cover"
-              />
+              {asset.thumbnailUrl ? (
+                <img
+                  src={asset.thumbnailUrl}
+                  alt=""
+                  className="aspect-video w-full object-cover"
+                />
+              ) : (
+                <div className="flex aspect-video w-full items-center justify-center bg-stone-100 text-sm font-semibold text-stone-400">
+                  Processing
+                </div>
+              )}
               <div className="p-4">
                 <div className="flex flex-col gap-1 border-b border-stone-100 pb-4">
                   <h2 className="font-semibold">{asset.title}</h2>
-                  <p className="text-sm text-stone-500">
-                    {asset.durationSeconds}s - {asset.tags.join(", ") || "untagged"}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
+                    <span>{asset.durationSeconds}s - {asset.tags.join(", ") || "untagged"}</span>
+                    {asset.status ? (
+                      <span className="rounded-full border border-stone-200 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                        {asset.status.replaceAll("_", " ")}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <MediaForm asset={asset} canEdit={canEdit} mode="update" />
               </div>

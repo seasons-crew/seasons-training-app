@@ -14,6 +14,8 @@ export type MediaAsset = {
   playbackUrl: string;
   muxPlaybackId?: string;
   muxAssetId?: string;
+  muxUploadId?: string;
+  status?: string;
   sourceDriveUrl?: string;
   tags: string[];
 };

@@ -64,6 +64,8 @@ export async function listMediaAssets(): Promise<MediaAsset[]> {
       playbackUrl: asset.playbackUrl,
       muxPlaybackId: asset.muxPlaybackId ?? undefined,
       muxAssetId: asset.muxAssetId ?? undefined,
+      muxUploadId: asset.muxUploadId ?? undefined,
+      status: asset.status,
       sourceDriveUrl: asset.sourceDriveUrl ?? undefined,
       tags: asset.tags,
     }));
@@ -163,6 +165,8 @@ export async function getWorkout(id: string): Promise<HydratedWorkout | undefine
             playbackUrl: step.mediaAsset.playbackUrl,
             muxPlaybackId: step.mediaAsset.muxPlaybackId ?? undefined,
             muxAssetId: step.mediaAsset.muxAssetId ?? undefined,
+            muxUploadId: step.mediaAsset.muxUploadId ?? undefined,
+            status: step.mediaAsset.status,
             sourceDriveUrl: step.mediaAsset.sourceDriveUrl ?? undefined,
             tags: step.mediaAsset.tags,
           },

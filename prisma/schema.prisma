@@ -39,6 +39,8 @@ model MediaAsset {
   playbackUrl     String
   muxPlaybackId   String?
   muxAssetId      String?
+  muxUploadId     String?       @unique
+  status          String        @default("ready")
   sourceDriveUrl  String?
   tags            String[]
   createdAt       DateTime      @default(now())
@@ -46,6 +48,7 @@ model MediaAsset {
   workoutSteps    WorkoutStep[]
 
   @@index([title])
+  @@index([status])
 }
 
 model Workout {

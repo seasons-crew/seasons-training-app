@@ -151,6 +151,7 @@ export async function createMediaAsset(formData: FormData) {
       thumbnailUrl,
       muxPlaybackId: optionalString(formData, "muxPlaybackId"),
       muxAssetId: optionalString(formData, "muxAssetId"),
+      status: "ready",
       sourceDriveUrl: optionalString(formData, "sourceDriveUrl"),
       tags: parseTags(optionalString(formData, "tags")),
     },
