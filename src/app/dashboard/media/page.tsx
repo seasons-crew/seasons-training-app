@@ -51,7 +51,7 @@ export default async function MediaPage() {
                   <img
                     src={asset.thumbnailUrl}
                     alt=""
-                    className="aspect-video w-full object-cover outline outline-1 outline-black/10"
+                    className="aspect-video w-full bg-stone-100 object-contain outline outline-1 outline-black/10"
                   />
                 ) : (
                   <div className="flex aspect-video w-full items-center justify-center bg-stone-100 text-sm font-semibold text-stone-400">
