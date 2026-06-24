@@ -106,10 +106,14 @@ export async function POST(request: Request) {
         durationSeconds: 0,
         thumbnailUrl: "",
         playbackUrl: "",
-        status: "waiting_for_upload",
         tags: parseTags(body.tags),
       },
     });
+    await prisma.$executeRawUnsafe(
+      'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
+      "waiting_for_upload",
+      id,
+    );
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/media");

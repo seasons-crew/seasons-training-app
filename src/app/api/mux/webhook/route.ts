@@ -61,9 +61,15 @@ export async function POST(request: Request) {
       },
       data: {
         muxAssetId: data.asset_id,
-        status: "processing",
       },
     });
+    if (data.meta?.external_id) {
+      await prisma.$executeRawUnsafe(
+        'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
+        "processing",
+        data.meta.external_id,
+      );
+    }
   }
 
   if (event.type === "video.asset.ready") {
@@ -83,22 +89,26 @@ export async function POST(request: Request) {
           muxPlaybackId: playbackId,
           playbackUrl: hlsUrl(playbackId),
           thumbnailUrl: thumbnailUrl(playbackId),
-          status: "ready",
         },
       });
+      if (data.meta?.external_id) {
+        await prisma.$executeRawUnsafe(
+          'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
+          "ready",
+          data.meta.external_id,
+        );
+      }
     }
   }
 
   if (event.type === "video.asset.errored" || event.type === "video.upload.cancelled" || event.type === "video.upload.timed_out") {
-    await prisma.mediaAsset.updateMany({
-      where: {
-        OR: [
-          { id: data.meta?.external_id },
-          { muxAssetId: data.id },
-        ],
-      },
-      data: { status: "errored" },
-    });
+    if (data.meta?.external_id) {
+      await prisma.$executeRawUnsafe(
+        'UPDATE "MediaAsset" SET "status" = $1 WHERE "id" = $2',
+        "errored",
+        data.meta.external_id,
+      );
+    }
   }
 
   revalidatePath("/dashboard");
