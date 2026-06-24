@@ -183,7 +183,7 @@ export function WorkoutPlayer({ workout }: Props) {
         playsInline
         autoPlay
         loop={step.advanceMode !== "video_end"}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full bg-black object-contain"
         onEnded={() => {
           if (step.advanceMode === "video_end") {
             goNext();
