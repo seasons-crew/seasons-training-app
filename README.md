@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Seasons Training App
 
-## Getting Started
+Mobile-first workout player and lightweight dashboard for Seasons. The trainee experience lives at shared `/workouts/:id` URLs. The dashboard lets Danny/Bobby manage daily sport-specific workouts, steps, and media.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Prisma + Postgres
+- Vercel hosting
+- Mux-ready media model
+
+## Local Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Workout player: http://localhost:3000/workouts/snow-today
+- Dashboard: http://localhost:3000/dashboard
+- Sneak preview demo: http://localhost:3000/workouts/water-tomorrow?sneak=true
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The dashboard uses a shared password gate. Without a local `.env`, the default development password is:
 
-## Learn More
+```txt
+seasons
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Environment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Create `.env` from `.env.example`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+cp .env.example .env
+```
 
-## Deploy on Vercel
+Required for dashboard editing and database-backed data:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```txt
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require
+DASHBOARD_PASSWORD=your-shared-dashboard-password
+DASHBOARD_SESSION_TOKEN=a-long-random-string
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+If `DATABASE_URL` is missing, the app falls back to mock workouts/media. Dashboard editing controls are visible but disabled.
+
+## Database Setup
+
+Use a Postgres database from Vercel Marketplace, preferably Neon for this MVP.
+
+After `DATABASE_URL` is set:
+
+```bash
+pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
+```
+
+Seed data mirrors the current mock workouts and media library.
+
+## Data Model
+
+Core tables:
+
+- `Workout`: title, sport, active date, future status field
+- `WorkoutStep`: ordered step list, media reference, advance behavior
+- `MediaAsset`: playback URL, thumbnail, Mux IDs, tags, source Drive URL
+
+Step advance modes:
+
+- `video_end`: advance when video ends
+- `timer`: loop video with audio until timer ends
+- `manual`: loop video until trainee taps the configured button
+
+## Scripts
+
+```bash
+pnpm lint
+pnpm build
+pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
+```
+
+There is no test suite yet.
+
+## Mux Seed Helper
+
+`scripts/build-media-seed.mjs` converts exported Mux asset JSON into media seed JSON:
+
+```bash
+node scripts/build-media-seed.mjs mux-assets.json media-seed.json
+```
+
+This does not upload videos yet. It formats existing Mux asset metadata into the app's media shape.
+
+## Vercel Notes
+
+Before deployment work, upgrade the local Vercel CLI:
+
+```bash
+npm i -g vercel@latest
+```
+
+or:
+
+```bash
+pnpm add -g vercel@latest
+```
+
+Set these environment variables in Vercel:
+
+- `DATABASE_URL`
+- `DASHBOARD_PASSWORD`
+- `DASHBOARD_SESSION_TOKEN`
+
+Then deploy the Next.js app normally through Vercel.
