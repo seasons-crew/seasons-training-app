@@ -28,6 +28,18 @@ function eventDetail<T>(event: unknown) {
   return undefined;
 }
 
+function parseUploadResponse(text: string) {
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text) as UploadResponse;
+  } catch {
+    return { error: text } satisfies UploadResponse;
+  }
+}
+
 export function MuxUploadCard({ enabled }: { enabled: boolean }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,10 +63,12 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ filename: file.name, tags }),
     });
-    const payload = (await response.json()) as UploadResponse;
+    const responseText = await response.text();
+    const payload = parseUploadResponse(responseText);
 
     if (!response.ok || !payload.url) {
-      throw new Error(payload.error || "Could not create a Mux upload.");
+      const detail = payload.detail ? ` ${payload.detail}` : "";
+      throw new Error(payload.error ? `${payload.error}${detail}` : `Upload endpoint failed with ${response.status}.`);
     }
 
     updateUpload(uploadId, { status: "uploading", message: "Uploading" });

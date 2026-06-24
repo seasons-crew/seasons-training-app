@@ -32,87 +32,94 @@ async function isDashboardSession() {
 }
 
 export async function POST(request: Request) {
-  if (!(await isDashboardSession())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    if (!(await isDashboardSession())) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  if (!process.env.DATABASE_URL) {
-    return NextResponse.json(
-      { error: "DATABASE_URL is required for uploads." },
-      { status: 500 },
-    );
-  }
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json(
+        { error: "DATABASE_URL is required for uploads." },
+        { status: 500 },
+      );
+    }
 
-  const tokenId = process.env.MUX_TOKEN_ID;
-  const tokenSecret = process.env.MUX_TOKEN_SECRET;
+    const tokenId = process.env.MUX_TOKEN_ID;
+    const tokenSecret = process.env.MUX_TOKEN_SECRET;
 
-  if (!tokenId || !tokenSecret) {
-    return NextResponse.json(
-      { error: "Mux credentials are not configured." },
-      { status: 500 },
-    );
-  }
+    if (!tokenId || !tokenSecret) {
+      return NextResponse.json(
+        { error: "Mux credentials are not configured." },
+        { status: 500 },
+      );
+    }
 
-  const body = await request.json().catch(() => ({}));
-  const filename = typeof body.filename === "string" && body.filename.trim() ? body.filename.trim() : "upload";
-  const title = "";
-  const id = `${slugify(filename) || "upload"}-${crypto.randomUUID().slice(0, 8)}`;
-  const auth = Buffer.from(`${tokenId}:${tokenSecret}`).toString("base64");
+    const body = await request.json().catch(() => ({}));
+    const filename = typeof body.filename === "string" && body.filename.trim() ? body.filename.trim() : "upload";
+    const title = "";
+    const id = `${slugify(filename) || "upload"}-${crypto.randomUUID().slice(0, 8)}`;
+    const auth = Buffer.from(`${tokenId}:${tokenSecret}`).toString("base64");
 
-  const muxResponse = await fetch("https://api.mux.com/video/v1/uploads", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      cors_origin: request.headers.get("origin") || "*",
-      new_asset_settings: {
-        playback_policies: ["public"],
-        video_quality: "basic",
-        meta: {
-          title: filename,
-          external_id: id,
-        },
+    const muxResponse = await fetch("https://api.mux.com/video/v1/uploads", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/json",
       },
-    }),
-  });
+      body: JSON.stringify({
+        cors_origin: request.headers.get("origin") || "*",
+        new_asset_settings: {
+          playback_policy: ["public"],
+          video_quality: "basic",
+          meta: {
+            title: filename,
+            external_id: id,
+          },
+        },
+      }),
+    });
 
-  if (!muxResponse.ok) {
-    const detail = await muxResponse.text();
+    if (!muxResponse.ok) {
+      const detail = await muxResponse.text();
+      return NextResponse.json(
+        { error: "Mux upload creation failed.", detail },
+        { status: 502 },
+      );
+    }
+
+    const payload = (await muxResponse.json()) as {
+      data?: { id?: string; url?: string };
+    };
+    const upload = payload.data;
+
+    if (!upload?.id || !upload.url) {
+      return NextResponse.json(
+        { error: "Mux did not return an upload URL." },
+        { status: 502 },
+      );
+    }
+
+    await prisma.mediaAsset.create({
+      data: {
+        id,
+        title,
+        durationSeconds: 0,
+        thumbnailUrl: "",
+        playbackUrl: "",
+        muxUploadId: upload.id,
+        status: "waiting_for_upload",
+        tags: parseTags(body.tags),
+      },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/media");
+
+    return NextResponse.json({ mediaAssetId: id, url: upload.url });
+  } catch (error) {
     return NextResponse.json(
-      { error: "Mux upload creation failed.", detail },
-      { status: 502 },
+      { error: error instanceof Error ? error.message : "Upload setup failed." },
+      { status: 500 },
     );
   }
-
-  const payload = (await muxResponse.json()) as {
-    data?: { id?: string; url?: string };
-  };
-  const upload = payload.data;
-
-  if (!upload?.id || !upload.url) {
-    return NextResponse.json(
-      { error: "Mux did not return an upload URL." },
-      { status: 502 },
-    );
-  }
-
-  await prisma.mediaAsset.create({
-    data: {
-      id,
-      title,
-      durationSeconds: 0,
-      thumbnailUrl: "",
-      playbackUrl: "",
-      muxUploadId: upload.id,
-      status: "waiting_for_upload",
-      tags: parseTags(body.tags),
-    },
-  });
-
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/media");
-
-  return NextResponse.json({ mediaAssetId: id, url: upload.url });
 }
