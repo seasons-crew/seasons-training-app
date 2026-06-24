@@ -57,6 +57,11 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
     );
   }
 
+  function removeUpload(id: string) {
+    mediaAssetIdsRef.current.delete(id);
+    setUploads((current) => current.filter((upload) => upload.id !== id));
+  }
+
   async function syncProcessingMedia() {
     setMessage("Checking Mux processing...");
 
@@ -147,10 +152,10 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
         status: "processing",
         message: "Mux processing",
       });
-      setMessage("Uploads complete. Mux is processing the videos.");
-      void markUploadComplete(id).finally(() => {
-        void syncProcessingMedia();
-      });
+      setMessage("Upload complete. Mux is processing the video.");
+      void markUploadComplete(id)
+        .then(() => syncProcessingMedia())
+        .finally(() => removeUpload(id));
     });
 
     upload.on("error", (event) => {
