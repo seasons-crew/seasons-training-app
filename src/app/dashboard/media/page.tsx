@@ -15,7 +15,7 @@ export default async function MediaPage() {
 
   return (
     <main className="min-h-dvh bg-stone-50 text-stone-950">
-      <div className="mx-auto w-full max-w-6xl px-6 py-8">
+      <div className="mx-auto w-full max-w-[1500px] px-6 py-8">
         <Link
           href="/dashboard"
           className="inline-flex items-center gap-2 text-sm font-semibold text-stone-600 hover:text-stone-950"
@@ -37,7 +37,7 @@ export default async function MediaPage() {
         ) : null}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <section className="grid gap-4 lg:grid-cols-2">
+          <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
             {mediaAssets.map((asset) => (
               <article
                 key={asset.id}
@@ -55,19 +55,30 @@ export default async function MediaPage() {
                   </div>
                 )}
                 <div className="p-4">
-                  <div className="flex flex-col gap-1 border-b border-stone-100 pb-4">
-                    <h2 className="[text-wrap:balance] font-semibold">{asset.title || "Untitled upload"}</h2>
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
-                      <span className="tabular-nums">{asset.durationSeconds}s</span>
-                      <span>{asset.tags.join(", ") || "untagged"}</span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="truncate font-semibold">{asset.title || "Untitled upload"}</h2>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-stone-500">
+                          <span className="tabular-nums">{asset.durationSeconds}s</span>
+                          <span className="truncate">{asset.tags.join(", ") || "untagged"}</span>
+                        </div>
+                      </div>
                       {asset.status ? (
-                        <span className="rounded-full border border-stone-200 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                        <span className="shrink-0 rounded-full border border-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-stone-500">
                           {asset.status.replaceAll("_", " ")}
                         </span>
                       ) : null}
                     </div>
+                    {canEdit ? (
+                      <details className="group mt-2 border-t border-stone-100 pt-3">
+                        <summary className="flex h-10 cursor-pointer list-none items-center justify-center rounded-md border border-stone-300 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-950 hover:text-stone-950 active:scale-[0.96]">
+                          Edit
+                        </summary>
+                        <MediaForm asset={asset} canEdit={canEdit} mode="update" />
+                      </details>
+                    ) : null}
                   </div>
-                  <MediaForm asset={asset} canEdit={canEdit} mode="update" />
                 </div>
               </article>
             ))}
