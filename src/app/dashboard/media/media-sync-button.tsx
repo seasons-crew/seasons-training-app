@@ -74,7 +74,7 @@ export function MediaSyncButton({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <div className="flex flex-col items-start gap-2 md:items-end">
+    <div className="flex min-w-0 flex-col items-start gap-2 sm:items-end">
       <button
         type="button"
         disabled={!enabled || isSyncing}
@@ -82,9 +82,9 @@ export function MediaSyncButton({ enabled }: { enabled: boolean }) {
         className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-950 hover:text-stone-950 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-40"
       >
         <RefreshCw size={15} className={isSyncing ? "animate-spin" : undefined} />
-        {isSyncing ? "Syncing" : "Sync Mux status"}
+        {isSyncing ? "Syncing" : "Sync"}
       </button>
-      {message ? <p className="max-w-64 text-sm text-stone-500 md:text-right">{message}</p> : null}
+      {message ? <p className="max-w-64 text-sm text-stone-500 sm:text-right">{message}</p> : null}
     </div>
   );
 }

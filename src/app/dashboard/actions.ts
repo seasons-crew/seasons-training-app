@@ -182,7 +182,6 @@ export async function updateMediaAsset(formData: FormData) {
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/media");
-  redirect("/dashboard/media");
 }
 
 export async function addWorkoutStep(formData: FormData) {

@@ -1,10 +1,9 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
-import { createMediaAsset, updateMediaAsset } from "../actions";
+import { createMediaAsset } from "../actions";
 import { MediaAddTabs } from "./media-add-tabs";
+import { MediaLibraryView } from "./media-library-view";
 import { MuxUploadCard } from "./mux-upload-card";
-import { MediaSyncButton } from "./media-sync-button";
 import { isDatabaseConfigured, listMediaAssets } from "@/lib/workout-data";
 
 export const dynamic = "force-dynamic";
@@ -24,14 +23,8 @@ export default async function MediaPage() {
           <ArrowLeft size={16} />
           Dashboard
         </Link>
-        <header className="mt-6 flex flex-col gap-4 border-b border-stone-200 pb-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-4xl font-semibold">Media library</h1>
-            <p className="mt-2 text-stone-600">
-              Upload workout videos to Mux, track processing status, and keep manual URL entry as a fallback.
-            </p>
-          </div>
-          <MediaSyncButton enabled={muxUploadEnabled} />
+        <header className="mt-6 border-b border-stone-200 pb-6">
+          <h1 className="text-2xl font-semibold">Media library</h1>
         </header>
 
         {!canEdit ? (
@@ -41,52 +34,7 @@ export default async function MediaPage() {
         ) : null}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-            {mediaAssets.map((asset) => (
-              <article
-                key={asset.id}
-                className="overflow-hidden rounded-md bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]"
-              >
-                {asset.thumbnailUrl ? (
-                  <img
-                    src={asset.thumbnailUrl}
-                    alt=""
-                    className="aspect-video w-full bg-stone-100 object-contain outline outline-1 outline-black/10"
-                  />
-                ) : (
-                  <div className="flex aspect-video w-full items-center justify-center bg-stone-100 text-sm font-semibold text-stone-400">
-                    Processing
-                  </div>
-                )}
-                <div className="p-4">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h2 className="truncate font-semibold">{asset.title || "Untitled upload"}</h2>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-stone-500">
-                          <span className="tabular-nums">{asset.durationSeconds}s</span>
-                          <span className="truncate">{asset.tags.join(", ") || "untagged"}</span>
-                        </div>
-                      </div>
-                      {asset.status ? (
-                        <span className="shrink-0 rounded-full border border-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-stone-500">
-                          {asset.status.replaceAll("_", " ")}
-                        </span>
-                      ) : null}
-                    </div>
-                    {canEdit ? (
-                      <details className="group mt-2 border-t border-stone-100 pt-3">
-                        <summary className="flex h-10 cursor-pointer list-none items-center justify-center rounded-md border border-stone-300 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-950 hover:text-stone-950 active:scale-[0.96]">
-                          Edit
-                        </summary>
-                        <MediaForm asset={asset} canEdit={canEdit} mode="update" />
-                      </details>
-                    ) : null}
-                  </div>
-                </div>
-              </article>
-            ))}
-          </section>
+          <MediaLibraryView mediaAssets={mediaAssets} canEdit={canEdit} muxUploadEnabled={muxUploadEnabled} />
 
           <aside className="lg:sticky lg:top-6">
             <MediaAddTabs
@@ -97,7 +45,7 @@ export default async function MediaPage() {
                   <p className="mt-1 text-sm text-stone-600">
                     Paste playback details only when a video already lives outside the uploader.
                   </p>
-                  <MediaForm canEdit={canEdit} mode="create" />
+                  <MediaCreateForm canEdit={canEdit} />
                 </div>
               }
             />
@@ -108,92 +56,49 @@ export default async function MediaPage() {
   );
 }
 
-type MediaAsset = Awaited<ReturnType<typeof listMediaAssets>>[number];
-
-function MediaForm({
-  asset,
-  canEdit,
-  mode,
-}: {
-  asset?: MediaAsset;
-  canEdit: boolean;
-  mode: "create" | "update";
-}) {
-  const isCreate = mode === "create";
-
+function MediaCreateForm({ canEdit }: { canEdit: boolean }) {
   return (
-    <form
-      action={isCreate ? createMediaAsset : updateMediaAsset}
-      className="mt-4 grid gap-3"
-    >
-      {asset ? <input type="hidden" name="id" value={asset.id} /> : null}
-      {!isCreate ? (
-        <>
-          <input type="hidden" name="playbackUrl" value={asset?.playbackUrl || ""} />
-          <input type="hidden" name="thumbnailUrl" value={asset?.thumbnailUrl || ""} />
-          <input type="hidden" name="muxPlaybackId" value={asset?.muxPlaybackId || ""} />
-          <input type="hidden" name="muxAssetId" value={asset?.muxAssetId || ""} />
-          <input type="hidden" name="sourceDriveUrl" value={asset?.sourceDriveUrl || ""} />
-        </>
-      ) : null}
+    <form action={createMediaAsset} className="mt-4 grid gap-3">
       <Field label="Title">
-        <input
-          name="title"
-          required
-          disabled={!canEdit}
-          defaultValue={asset?.title}
-          placeholder="Mobility Flow"
-          className={inputClass}
-        />
+        <input name="title" required disabled={!canEdit} placeholder="Mobility Flow" className={inputClass} />
       </Field>
       <Field label="Duration seconds">
         <input
           name="durationSeconds"
           required
           disabled={!canEdit}
-          defaultValue={asset?.durationSeconds}
           inputMode="numeric"
           placeholder="30"
           className={inputClass}
         />
       </Field>
-      {isCreate ? (
-        <>
-          <Field label="Playback URL">
-            <input
-              name="playbackUrl"
-              required
-              disabled={!canEdit}
-              placeholder="https://stream.mux.com/...m3u8"
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Thumbnail URL">
-            <input
-              name="thumbnailUrl"
-              required
-              disabled={!canEdit}
-              placeholder="https://image.mux.com/.../thumbnail.jpg"
-              className={inputClass}
-            />
-          </Field>
-        </>
-      ) : null}
-      <Field label="Tags">
+      <Field label="Playback URL">
         <input
-          name="tags"
+          name="playbackUrl"
+          required
           disabled={!canEdit}
-          defaultValue={asset?.tags.join(", ")}
-          placeholder="snow, mobility"
+          placeholder="https://stream.mux.com/...m3u8"
           className={inputClass}
         />
+      </Field>
+      <Field label="Thumbnail URL">
+        <input
+          name="thumbnailUrl"
+          required
+          disabled={!canEdit}
+          placeholder="https://image.mux.com/.../thumbnail.jpg"
+          className={inputClass}
+        />
+      </Field>
+      <Field label="Tags">
+        <input name="tags" disabled={!canEdit} placeholder="snow, mobility" className={inputClass} />
       </Field>
       <button
         disabled={!canEdit}
         className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white transition-transform disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.96]"
       >
         <Plus size={16} />
-        {isCreate ? "Add media" : "Save"}
+        Add media
       </button>
     </form>
   );

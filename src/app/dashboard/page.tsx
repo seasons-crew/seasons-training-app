@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarDays, Dumbbell, Film, LogOut, Plus } from "lucide-react";
-import { appTimeZone } from "@/lib/date";
+import { Dumbbell, Film, LogOut, Plus } from "lucide-react";
 import { createWorkout } from "./actions";
 import { isDatabaseConfigured, listMediaAssets, listWorkouts } from "@/lib/workout-data";
 
@@ -22,7 +21,7 @@ export default async function DashboardPage() {
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
               Seasons HQ
             </p>
-            <h1 className="mt-2 text-4xl font-semibold tracking-normal">
+            <h1 className="mt-2 text-2xl font-semibold tracking-normal">
               Workout dashboard
             </h1>
           </div>
@@ -34,7 +33,7 @@ export default async function DashboardPage() {
           </form>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-2">
           <Metric
             icon={<Dumbbell size={18} />}
             label="Workouts"
@@ -44,11 +43,6 @@ export default async function DashboardPage() {
             icon={<Film size={18} />}
             label="Media assets"
             value={String(mediaAssets.length)}
-          />
-          <Metric
-            icon={<CalendarDays size={18} />}
-            label="Timezone"
-            value={appTimeZone}
           />
         </section>
 
