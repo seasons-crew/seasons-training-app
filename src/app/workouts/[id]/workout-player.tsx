@@ -28,7 +28,6 @@ export function WorkoutPlayer({ feedbackAction, workout }: Props) {
   const [isPending, startTransition] = useTransition();
 
   const step = workout.steps[stepIndex];
-  const progressLabel = `${Math.min(stepIndex + 1, workout.steps.length)} / ${workout.steps.length}`;
 
   useEffect(() => {
     const saved = window.localStorage.getItem(storageKey);
@@ -214,37 +213,18 @@ export function WorkoutPlayer({ feedbackAction, workout }: Props) {
           }
         }}
       />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.58),rgba(0,0,0,0.08)_38%,rgba(0,0,0,0.72))]" />
+      {step.advanceMode === "timer" ? (
+        <div className="absolute inset-x-0 bottom-0 h-52 bg-[linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,0.72))]" />
+      ) : null}
 
-      <section className="relative z-10 flex min-h-dvh flex-col justify-between px-5 py-5 sm:px-8">
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/55">
-              {workout.sport}
-            </p>
-            <h1 className="mt-1 max-w-[18rem] text-2xl font-semibold leading-tight">
-              {step.title}
-            </h1>
-          </div>
-          <div className="rounded-md bg-white/12 px-3 py-2 text-sm font-semibold backdrop-blur">
-            {progressLabel}
-          </div>
-        </header>
-
-        <div className="space-y-4 pb-4">
+      <section className="relative z-10 flex min-h-dvh flex-col justify-end px-5 py-5 sm:px-8">
+        <div className="pb-4">
           {step.advanceMode === "timer" ? (
-            <div className="rounded-md bg-white/12 p-4 backdrop-blur">
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">
-                    Timer
-                  </p>
-                  <p className="mt-1 text-5xl font-semibold tabular-nums">
-                    {timerRemaining ?? step.durationSeconds}s
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/20">
+            <div className="rounded-md bg-black/35 p-4 backdrop-blur">
+              <p className="text-5xl font-semibold tabular-nums">
+                {timerRemaining ?? step.durationSeconds}s
+              </p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/20">
                 <div
                   className="h-full rounded-full bg-white"
                   style={{ width: `${percent}%` }}
@@ -252,7 +232,6 @@ export function WorkoutPlayer({ feedbackAction, workout }: Props) {
               </div>
             </div>
           ) : null}
-
         </div>
       </section>
     </main>
