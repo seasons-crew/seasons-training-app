@@ -110,7 +110,7 @@ export default async function DashboardPage() {
                 </label>
                 <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
                   Schedule dates
-                  <ScheduleDatesInput disabled={!canEdit} />
+                  <ScheduleDatesInput disabled={!canEdit} variant="popover" />
                 </label>
                 <button disabled={!canEdit} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
                   <Plus size={16} />
