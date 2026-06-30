@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Dumbbell, Film, LogOut, MessageSquare, Plus, Star } from "lucide-react";
 import { createWorkout } from "./actions";
+import { ScheduleDatesInput } from "./schedule-dates-input";
 import { isDatabaseConfigured, listMediaAssets, listWorkouts } from "@/lib/workout-data";
 
 export const dynamic = "force-dynamic";
@@ -93,7 +94,7 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold">Scheduled workouts</h2>
               </div>
-              <form action={createWorkout} className="mt-4 grid gap-3 rounded-md bg-stone-50 p-3 md:grid-cols-[1.4fr_120px_1fr_104px] md:items-end">
+              <form action={createWorkout} className="mt-4 grid gap-3 rounded-md bg-stone-50 p-3 lg:grid-cols-[minmax(0,1fr)_120px_minmax(280px,1.4fr)_104px] lg:items-end">
                 <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
                   Title
                   <input name="title" required disabled={!canEdit} placeholder="Snow Legs" className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
@@ -108,8 +109,8 @@ export default async function DashboardPage() {
                   </select>
                 </label>
                 <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
-                  Scheduled dates
-                  <textarea name="activeDates" required disabled={!canEdit} placeholder="2026-07-01, 2026-07-03" className="min-h-10 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
+                  Schedule dates
+                  <ScheduleDatesInput disabled={!canEdit} />
                 </label>
                 <button disabled={!canEdit} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
                   <Plus size={16} />
