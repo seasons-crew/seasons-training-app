@@ -35,9 +35,11 @@ export type Workout = {
   title: string;
   sport: SportCategory;
   activeDate: string;
+  scheduledDates: string[];
   status: WorkoutStatus;
   steps: WorkoutStep[];
   updatedAt: string;
+  feedbackSummary?: WorkoutFeedbackSummary;
 };
 
 export type HydratedWorkoutStep = WorkoutStep & {
@@ -46,4 +48,21 @@ export type HydratedWorkoutStep = WorkoutStep & {
 
 export type HydratedWorkout = Omit<Workout, "steps"> & {
   steps: HydratedWorkoutStep[];
+  feedback: WorkoutFeedback[];
+};
+
+export type WorkoutFeedback = {
+  id: string;
+  workoutId: string;
+  workoutScheduleId?: string;
+  rating: number;
+  name: string;
+  comment?: string;
+  createdAt: string;
+};
+
+export type WorkoutFeedbackSummary = {
+  averageRating: number | null;
+  responseCount: number;
+  recent: WorkoutFeedback[];
 };

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { getWorkoutAvailability } from "@/lib/date";
+import { getScheduledWorkoutAvailability } from "@/lib/date";
 import { getWorkout } from "@/lib/workout-data";
+import { submitWorkoutFeedback } from "./actions";
 import { WorkoutPlayer } from "./workout-player";
 
 type PageProps = {
@@ -18,8 +19,8 @@ export default async function WorkoutPage({ params, searchParams }: PageProps) {
     notFound();
   }
 
-  const availability = getWorkoutAvailability(
-    workout.activeDate,
+  const availability = getScheduledWorkoutAvailability(
+    workout.scheduledDates,
     query.sneak === "true",
   );
 
@@ -31,7 +32,7 @@ export default async function WorkoutPage({ params, searchParams }: PageProps) {
     return <AccessMessage message="That workout expired" />;
   }
 
-  return <WorkoutPlayer workout={workout} />;
+  return <WorkoutPlayer feedbackAction={submitWorkoutFeedback} workout={workout} />;
 }
 
 function AccessMessage({ message }: { message: string }) {

@@ -4,6 +4,8 @@ import type {
   HydratedWorkoutStep,
   MediaAsset,
   Workout,
+  WorkoutFeedback,
+  WorkoutFeedbackSummary,
 } from "./types";
 import {
   getTodayWorkoutId as getMockTodayWorkoutId,
@@ -38,6 +40,40 @@ function isRecoverableDatabaseReadError(error: unknown) {
 
 function toDateOnly(date: Date) {
   return date.toISOString().slice(0, 10);
+}
+
+function mapFeedback(feedback: {
+  id: string;
+  workoutId: string;
+  workoutScheduleId: string | null;
+  rating: number;
+  name: string;
+  comment: string | null;
+  createdAt: Date;
+}): WorkoutFeedback {
+  return {
+    id: feedback.id,
+    workoutId: feedback.workoutId,
+    workoutScheduleId: feedback.workoutScheduleId ?? undefined,
+    rating: feedback.rating,
+    name: feedback.name,
+    comment: feedback.comment ?? undefined,
+    createdAt: feedback.createdAt.toISOString(),
+  };
+}
+
+function summarizeFeedback(feedback: WorkoutFeedback[]): WorkoutFeedbackSummary {
+  const responseCount = feedback.length;
+  const averageRating =
+    responseCount === 0
+      ? null
+      : feedback.reduce((total, item) => total + item.rating, 0) / responseCount;
+
+  return {
+    averageRating,
+    responseCount,
+    recent: feedback.slice(0, 3),
+  };
 }
 
 async function getPrisma() {
@@ -87,18 +123,32 @@ export async function listWorkouts(): Promise<Workout[]> {
     const prisma = await getPrisma();
     const workouts = await prisma.workout.findMany({
       include: {
+        feedback: {
+          orderBy: { createdAt: "desc" },
+        },
+        schedules: {
+          orderBy: { activeDate: "asc" },
+        },
         steps: {
           orderBy: { position: "asc" },
+        },
+        _count: {
+          select: { feedback: true },
         },
       },
       orderBy: [{ activeDate: "desc" }, { sport: "asc" }],
     });
 
     return workouts.map((workout) => ({
+      feedbackSummary: summarizeFeedback(workout.feedback.map(mapFeedback)),
       id: workout.id,
       title: workout.title,
       sport: workout.sport,
       activeDate: toDateOnly(workout.activeDate),
+      scheduledDates:
+        workout.schedules.length > 0
+          ? workout.schedules.map((schedule) => toDateOnly(schedule.activeDate))
+          : [toDateOnly(workout.activeDate)],
       status: workout.status,
       updatedAt: workout.updatedAt.toISOString(),
       steps: workout.steps.map((step) => ({
@@ -130,6 +180,12 @@ export async function getWorkout(id: string): Promise<HydratedWorkout | undefine
     const workout = await prisma.workout.findUnique({
       where: { id },
       include: {
+        feedback: {
+          orderBy: { createdAt: "desc" },
+        },
+        schedules: {
+          orderBy: { activeDate: "asc" },
+        },
         steps: {
           orderBy: { position: "asc" },
           include: { mediaAsset: true },
@@ -141,11 +197,19 @@ export async function getWorkout(id: string): Promise<HydratedWorkout | undefine
       return undefined;
     }
 
+    const feedback = workout.feedback.map(mapFeedback);
+
     return {
+      feedback,
+      feedbackSummary: summarizeFeedback(feedback),
       id: workout.id,
       title: workout.title,
       sport: workout.sport,
       activeDate: toDateOnly(workout.activeDate),
+      scheduledDates:
+        workout.schedules.length > 0
+          ? workout.schedules.map((schedule) => toDateOnly(schedule.activeDate))
+          : [toDateOnly(workout.activeDate)],
       status: workout.status,
       updatedAt: workout.updatedAt.toISOString(),
       steps: workout.steps.map(
@@ -190,6 +254,21 @@ export async function getTodayWorkoutId() {
   try {
     const prisma = await getPrisma();
     const today = new Date(`${getTodayInLosAngeles()}T00:00:00.000Z`);
+    const schedule = await prisma.workoutSchedule.findFirst({
+      where: {
+        activeDate: today,
+        workout: {
+          status: "published",
+        },
+      },
+      orderBy: { workoutId: "asc" },
+      select: { workoutId: true },
+    });
+
+    if (schedule) {
+      return schedule.workoutId;
+    }
+
     const workout = await prisma.workout.findFirst({
       where: {
         activeDate: today,

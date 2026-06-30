@@ -72,6 +72,19 @@ async function main() {
         manualButtonLabel: step.manualButtonLabel,
       })),
     });
+
+    await prisma.workoutSchedule.deleteMany({
+      where: { workoutId: workout.id },
+    });
+
+    await prisma.workoutSchedule.createMany({
+      data: workout.scheduledDates.map((activeDate) => ({
+        id: `${workout.id}-schedule-${activeDate}`,
+        workoutId: workout.id,
+        activeDate: asDateOnly(activeDate),
+      })),
+      skipDuplicates: true,
+    });
   }
 }
 

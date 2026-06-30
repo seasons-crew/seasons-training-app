@@ -62,7 +62,7 @@ export function StepBuilderForm({
           </select>
         </label>
         <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
-          Advance
+          Configuration
           <select
             name="advanceMode"
             disabled={!canEdit}
@@ -71,21 +71,21 @@ export function StepBuilderForm({
             className={inputClass}
           >
             <option value="video_end">Video end</option>
-            <option value="timer">Timer</option>
+            <option value="timer">Countdown timer</option>
             <option value="manual">Manual</option>
           </select>
         </label>
         {advanceMode === "timer" ? (
           <label key="timer-start" className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
-            Start
+            Auto-start
             <select
               name="timerStartMode"
               disabled={!canEdit}
               defaultValue={step?.timerStartMode || "auto"}
               className={inputClass}
             >
-              <option value="auto">Auto</option>
-              <option value="tap">Tap</option>
+              <option value="auto">Yes</option>
+              <option value="tap">No</option>
             </select>
           </label>
         ) : null}

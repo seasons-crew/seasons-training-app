@@ -7,6 +7,7 @@ import type { SportCategory } from "@/lib/types";
 type WorkoutEditModalProps = {
   action: (formData: FormData) => Promise<void>;
   activeDate: string;
+  scheduledDates: string[];
   canEdit: boolean;
   id: string;
   sport: SportCategory;
@@ -19,6 +20,7 @@ const inputClass =
 export function WorkoutEditModal({
   action,
   activeDate,
+  scheduledDates,
   canEdit,
   id,
   sport,
@@ -76,8 +78,14 @@ export function WorkoutEditModal({
             </select>
           </label>
           <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
-            Active date
-            <input name="activeDate" required type="date" disabled={!canEdit} defaultValue={activeDate} className={inputClass} />
+            Scheduled dates
+            <textarea
+              name="activeDates"
+              required
+              disabled={!canEdit}
+              defaultValue={(scheduledDates.length ? scheduledDates : [activeDate]).join("\n")}
+              className="min-h-28 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+            />
           </label>
           <div className="flex justify-end gap-2 pt-2">
             <button

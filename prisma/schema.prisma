@@ -52,17 +52,31 @@ model MediaAsset {
 }
 
 model Workout {
-  id         String         @id
+  id         String            @id
   title      String
   sport      SportCategory
-  activeDate DateTime       @db.Date
-  status     WorkoutStatus  @default(published)
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  activeDate DateTime          @db.Date
+  status     WorkoutStatus     @default(published)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  feedback   WorkoutFeedback[]
+  schedules  WorkoutSchedule[]
   steps      WorkoutStep[]
 
   @@index([activeDate])
   @@index([sport, activeDate])
+}
+
+model WorkoutSchedule {
+  id         String            @id
+  workoutId  String
+  activeDate DateTime          @db.Date
+  createdAt  DateTime          @default(now())
+  workout    Workout           @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  feedback   WorkoutFeedback[]
+
+  @@unique([workoutId, activeDate])
+  @@index([activeDate])
 }
 
 model WorkoutStep {
@@ -82,4 +96,19 @@ model WorkoutStep {
 
   @@unique([workoutId, position])
   @@index([mediaAssetId])
+}
+
+model WorkoutFeedback {
+  id                String           @id
+  workoutId         String
+  workoutScheduleId String?
+  rating            Int
+  name              String
+  comment           String?
+  createdAt         DateTime         @default(now())
+  workout           Workout          @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workoutSchedule   WorkoutSchedule? @relation(fields: [workoutScheduleId], references: [id], onDelete: SetNull)
+
+  @@index([workoutId, createdAt])
+  @@index([workoutScheduleId])
 }
