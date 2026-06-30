@@ -42,7 +42,13 @@ export const workouts: Workout[] = [
     title: "Snow Legs: Control Day",
     sport: "snow",
     activeDate: today,
+    scheduledDates: [today],
     status: "published",
+    feedbackSummary: {
+      averageRating: null,
+      responseCount: 0,
+      recent: [],
+    },
     updatedAt: new Date().toISOString(),
     steps: [
       {
@@ -73,7 +79,13 @@ export const workouts: Workout[] = [
     title: "Earth Core: Trail Ready",
     sport: "earth",
     activeDate: today,
+    scheduledDates: [today],
     status: "published",
+    feedbackSummary: {
+      averageRating: null,
+      responseCount: 0,
+      recent: [],
+    },
     updatedAt: new Date().toISOString(),
     steps: [
       {
@@ -98,7 +110,13 @@ export const workouts: Workout[] = [
     title: "Water Shoulders: Paddle Prep",
     sport: "water",
     activeDate: "2999-01-01",
+    scheduledDates: ["2999-01-01"],
     status: "published",
+    feedbackSummary: {
+      averageRating: null,
+      responseCount: 0,
+      recent: [],
+    },
     updatedAt: new Date().toISOString(),
     steps: [
       {
@@ -114,7 +132,13 @@ export const workouts: Workout[] = [
     title: "Expired Demo",
     sport: "general",
     activeDate: "2020-01-01",
+    scheduledDates: ["2020-01-01"],
     status: "published",
+    feedbackSummary: {
+      averageRating: null,
+      responseCount: 0,
+      recent: [],
+    },
     updatedAt: new Date().toISOString(),
     steps: [
       {
@@ -136,6 +160,7 @@ export function getWorkout(id: string): HydratedWorkout | undefined {
 
   return {
     ...workout,
+    feedback: [],
     steps: workout.steps.map((step) => {
       const media = mediaAssets.find((asset) => asset.id === step.mediaAssetId);
 

@@ -43,6 +43,28 @@ function dateOnly(date: string) {
   return new Date(`${date}T00:00:00.000Z`);
 }
 
+function parseScheduledDates(formData: FormData) {
+  const rawDates = [
+    ...formData.getAll("activeDates"),
+    String(formData.get("activeDate") || ""),
+  ];
+  const dates = rawDates
+    .flatMap((value) => String(value).split(/[\n,]+/))
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const uniqueDates = [...new Set(dates)].sort();
+
+  if (uniqueDates.length === 0) {
+    throw new Error("At least one scheduled date is required.");
+  }
+
+  return uniqueDates;
+}
+
+function scheduleId(workoutId: string, activeDate: string) {
+  return `${workoutId}-schedule-${activeDate}`;
+}
+
 function slugify(input: string) {
   return input
     .toLowerCase()
@@ -84,17 +106,29 @@ export async function createWorkout(formData: FormData) {
 
   const title = requiredString(formData, "title");
   const sport = parseSport(requiredString(formData, "sport"));
-  const activeDate = requiredString(formData, "activeDate");
+  const scheduledDates = parseScheduledDates(formData);
+  const activeDate = scheduledDates[0];
   const id = `${sport}-${activeDate}-${crypto.randomUUID().slice(0, 8)}`;
 
-  await prisma.workout.create({
-    data: {
-      id,
-      title,
-      sport,
-      activeDate: dateOnly(activeDate),
-      status: "published",
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.workout.create({
+      data: {
+        id,
+        title,
+        sport,
+        activeDate: dateOnly(activeDate),
+        status: "published",
+      },
+    });
+
+    await tx.workoutSchedule.createMany({
+      data: scheduledDates.map((scheduledDate) => ({
+        id: scheduleId(id, scheduledDate),
+        workoutId: id,
+        activeDate: dateOnly(scheduledDate),
+      })),
+      skipDuplicates: true,
+    });
   });
 
   revalidatePath("/dashboard");
@@ -107,16 +141,29 @@ export async function updateWorkout(formData: FormData) {
   const id = requiredString(formData, "id");
   const title = requiredString(formData, "title");
   const sport = parseSport(requiredString(formData, "sport"));
-  const activeDate = requiredString(formData, "activeDate");
+  const scheduledDates = parseScheduledDates(formData);
+  const activeDate = scheduledDates[0];
 
-  await prisma.workout.update({
-    where: { id },
-    data: {
-      title,
-      sport,
-      activeDate: dateOnly(activeDate),
-      status: "published",
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.workout.update({
+      where: { id },
+      data: {
+        title,
+        sport,
+        activeDate: dateOnly(activeDate),
+        status: "published",
+      },
+    });
+
+    await tx.workoutSchedule.deleteMany({ where: { workoutId: id } });
+    await tx.workoutSchedule.createMany({
+      data: scheduledDates.map((scheduledDate) => ({
+        id: scheduleId(id, scheduledDate),
+        workoutId: id,
+        activeDate: dateOnly(scheduledDate),
+      })),
+      skipDuplicates: true,
+    });
   });
 
   revalidatePath("/dashboard");

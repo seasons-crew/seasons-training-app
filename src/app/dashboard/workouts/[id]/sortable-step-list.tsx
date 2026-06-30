@@ -18,7 +18,9 @@ type SortableStepListProps = {
 
 function advanceLabel(step: HydratedWorkoutStep) {
   if (step.advanceMode === "timer") {
-    return `${step.durationSeconds || 0}s timer, ${step.timerStartMode || "auto"} start`;
+    return `${step.durationSeconds || 0}s countdown, ${
+      (step.timerStartMode || "auto") === "auto" ? "auto-start" : "delayed start"
+    }`;
   }
 
   if (step.advanceMode === "manual") {

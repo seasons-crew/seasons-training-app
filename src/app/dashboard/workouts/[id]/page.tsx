@@ -55,13 +55,15 @@ export default async function DashboardWorkoutPage({ params }: PageProps) {
               </p>
               <h1 className="mt-2 text-3xl font-semibold">{workout.title}</h1>
               <p className="mt-2 text-sm text-stone-500">
-                Active {workout.activeDate} - {workout.steps.length} steps
+                Scheduled {formatScheduledDates(workout.scheduledDates)} -{" "}
+                {workout.steps.length} steps
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <WorkoutEditModal
                 action={updateWorkout}
                 activeDate={workout.activeDate}
+                scheduledDates={workout.scheduledDates}
                 canEdit={canEdit}
                 id={workout.id}
                 sport={workout.sport}
@@ -134,7 +136,76 @@ export default async function DashboardWorkoutPage({ params }: PageProps) {
             workoutId={workout.id}
           />
         </section>
+
+        <section className="rounded-md border border-stone-200 bg-white">
+          <div className="border-b border-stone-200 px-5 py-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Feedback</h2>
+                <p className="mt-1 text-sm text-stone-500">
+                  Test-phase athlete ratings and comments from the completion screen.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-right">
+                <div className="rounded-md bg-stone-50 px-3 py-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                    Average
+                  </p>
+                  <p className="mt-1 text-lg font-semibold">
+                    {formatRating(workout.feedbackSummary?.averageRating)}
+                  </p>
+                </div>
+                <div className="rounded-md bg-stone-50 px-3 py-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                    Responses
+                  </p>
+                  <p className="mt-1 text-lg font-semibold">
+                    {workout.feedbackSummary?.responseCount ?? 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          {workout.feedback.length > 0 ? (
+            <div className="divide-y divide-stone-100">
+              {workout.feedback.map((feedback) => (
+                <article key={feedback.id} className="grid gap-2 px-5 py-4 sm:grid-cols-[120px_1fr_160px] sm:items-start">
+                  <p className="font-semibold text-stone-800">{feedback.rating}/5</p>
+                  <div>
+                    <p className="font-semibold">{feedback.name}</p>
+                    <p className="mt-1 text-sm text-stone-600">
+                      {feedback.comment || "No written feedback."}
+                    </p>
+                  </div>
+                  <p className="text-sm text-stone-500">
+                    {new Date(feedback.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="px-5 py-10 text-center text-sm font-medium text-stone-500">
+              No feedback has been submitted for this workout yet.
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );
+}
+
+function formatScheduledDates(dates: string[]) {
+  if (dates.length <= 2) {
+    return dates.join(", ");
+  }
+
+  return `${dates[0]} + ${dates.length - 1} more`;
+}
+
+function formatRating(rating?: number | null) {
+  return rating === null || rating === undefined ? "-" : rating.toFixed(1);
 }

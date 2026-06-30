@@ -23,4 +23,26 @@ export function getWorkoutAvailability(activeDate: string, sneak: boolean) {
   return "available" as const;
 }
 
+export function getScheduledWorkoutAvailability(
+  scheduledDates: string[],
+  sneak: boolean,
+) {
+  const today = getTodayInLosAngeles();
+  const dates = scheduledDates.length > 0 ? scheduledDates : [];
+
+  if (sneak || dates.includes(today)) {
+    return "available" as const;
+  }
+
+  if (dates.length > 0 && dates.every((date) => date < today)) {
+    return "expired" as const;
+  }
+
+  if (dates.length > 0 && dates.every((date) => date > today)) {
+    return "early" as const;
+  }
+
+  return "expired" as const;
+}
+
 export const appTimeZone = APP_TIME_ZONE;

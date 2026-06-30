@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Dumbbell, Film, LogOut, Plus } from "lucide-react";
+import { Dumbbell, Film, LogOut, MessageSquare, Plus, Star } from "lucide-react";
 import { createWorkout } from "./actions";
 import { isDatabaseConfigured, listMediaAssets, listWorkouts } from "@/lib/workout-data";
 
@@ -12,6 +12,29 @@ export default async function DashboardPage() {
     listMediaAssets(),
   ]);
   const canEdit = isDatabaseConfigured();
+  const feedbackCount = workouts.reduce(
+    (total, workout) => total + (workout.feedbackSummary?.responseCount ?? 0),
+    0,
+  );
+  const ratedWorkouts = workouts.filter(
+    (workout) => workout.feedbackSummary?.averageRating !== null,
+  );
+  const averageRating =
+    ratedWorkouts.length === 0
+      ? null
+      : ratedWorkouts.reduce(
+          (total, workout) => total + (workout.feedbackSummary?.averageRating ?? 0),
+          0,
+        ) / ratedWorkouts.length;
+  const recentFeedback = workouts
+    .flatMap((workout) =>
+      (workout.feedbackSummary?.recent ?? []).map((feedback) => ({
+        ...feedback,
+        workoutTitle: workout.title,
+      })),
+    )
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 4);
 
   return (
     <main className="min-h-dvh bg-stone-50 text-stone-950">
@@ -33,7 +56,7 @@ export default async function DashboardPage() {
           </form>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-2">
+        <section className="grid gap-4 md:grid-cols-4">
           <Metric
             icon={<Dumbbell size={18} />}
             label="Workouts"
@@ -43,6 +66,16 @@ export default async function DashboardPage() {
             icon={<Film size={18} />}
             label="Media assets"
             value={String(mediaAssets.length)}
+          />
+          <Metric
+            icon={<Star size={18} />}
+            label="Avg rating"
+            value={averageRating === null ? "-" : averageRating.toFixed(1)}
+          />
+          <Metric
+            icon={<MessageSquare size={18} />}
+            label="Feedback"
+            value={String(feedbackCount)}
           />
         </section>
 
@@ -60,7 +93,7 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold">Scheduled workouts</h2>
               </div>
-              <form action={createWorkout} className="mt-4 grid gap-3 rounded-md bg-stone-50 p-3 md:grid-cols-[1.4fr_120px_150px_104px] md:items-end">
+              <form action={createWorkout} className="mt-4 grid gap-3 rounded-md bg-stone-50 p-3 md:grid-cols-[1.4fr_120px_1fr_104px] md:items-end">
                 <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
                   Title
                   <input name="title" required disabled={!canEdit} placeholder="Snow Legs" className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
@@ -75,8 +108,8 @@ export default async function DashboardPage() {
                   </select>
                 </label>
                 <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
-                  Active date
-                  <input name="activeDate" required type="date" disabled={!canEdit} className="h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
+                  Scheduled dates
+                  <textarea name="activeDates" required disabled={!canEdit} placeholder="2026-07-01, 2026-07-03" className="min-h-10 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950" />
                 </label>
                 <button disabled={!canEdit} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
                   <Plus size={16} />
@@ -89,7 +122,7 @@ export default async function DashboardPage() {
                 <Link
                   key={workout.id}
                   href={`/dashboard/workouts/${workout.id}`}
-                  className="grid gap-3 px-5 py-4 transition-colors hover:bg-stone-50 sm:grid-cols-[1fr_120px_120px] sm:items-center"
+                  className="grid gap-3 px-5 py-4 transition-colors hover:bg-stone-50 sm:grid-cols-[1fr_120px_180px_110px] sm:items-center"
                 >
                   <div>
                     <p className="font-semibold">{workout.title}</p>
@@ -100,13 +133,46 @@ export default async function DashboardPage() {
                   <p className="text-sm capitalize text-stone-600">
                     {workout.sport}
                   </p>
-                  <p className="text-sm text-stone-600">{workout.activeDate}</p>
+                  <p className="text-sm text-stone-600">
+                    {formatScheduledDates(workout.scheduledDates)}
+                  </p>
+                  <p className="text-sm font-semibold text-stone-700">
+                    {formatRating(workout.feedbackSummary?.averageRating)}
+                  </p>
                 </Link>
               ))}
             </div>
           </div>
 
-          <aside className="rounded-md border border-stone-200 bg-white p-5">
+          <aside className="grid gap-6">
+          <section className="rounded-md border border-stone-200 bg-white p-5">
+            <h2 className="text-lg font-semibold">Recent feedback</h2>
+            <div className="mt-4 space-y-4">
+              {recentFeedback.length > 0 ? (
+                recentFeedback.map((feedback) => (
+                  <div key={feedback.id} className="border-b border-stone-100 pb-4 last:border-b-0 last:pb-0">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="min-w-0 truncate text-sm font-semibold">
+                        {feedback.workoutTitle}
+                      </p>
+                      <p className="shrink-0 text-sm font-semibold text-stone-700">
+                        {feedback.rating}/5
+                      </p>
+                    </div>
+                    <p className="mt-1 text-sm text-stone-500">
+                      {feedback.comment || "No comment"}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm font-medium text-stone-500">
+                  Feedback will appear here after athletes complete workouts.
+                </p>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-md border border-stone-200 bg-white p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Media library</h2>
               <Link
@@ -135,11 +201,24 @@ export default async function DashboardPage() {
                 </div>
               ))}
             </div>
+          </section>
           </aside>
         </section>
       </div>
     </main>
   );
+}
+
+function formatScheduledDates(dates: string[]) {
+  if (dates.length <= 2) {
+    return dates.join(", ");
+  }
+
+  return `${dates[0]} + ${dates.length - 1} more`;
+}
+
+function formatRating(rating?: number | null) {
+  return rating === null || rating === undefined ? "No rating" : `${rating.toFixed(1)} / 5`;
 }
 
 function Metric({
