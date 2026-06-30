@@ -2,6 +2,7 @@
 
 import { Edit3, X } from "lucide-react";
 import { useRef, useTransition } from "react";
+import { ScheduleDatesInput } from "../../schedule-dates-input";
 import type { SportCategory } from "@/lib/types";
 
 type WorkoutEditModalProps = {
@@ -78,13 +79,10 @@ export function WorkoutEditModal({
             </select>
           </label>
           <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
-            Scheduled dates
-            <textarea
-              name="activeDates"
-              required
+            Schedule dates
+            <ScheduleDatesInput
               disabled={!canEdit}
-              defaultValue={(scheduledDates.length ? scheduledDates : [activeDate]).join("\n")}
-              className="min-h-28 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+              initialDates={scheduledDates.length ? scheduledDates : [activeDate]}
             />
           </label>
           <div className="flex justify-end gap-2 pt-2">
