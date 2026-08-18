@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { dashboardAuthCookie, getDashboardSessionToken } from "@/lib/dashboard-auth";
 import { prisma } from "@/lib/prisma";
+import { parseTagNames, syncMediaTags } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,17 +22,6 @@ function titleFromFilename(filename: string) {
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim() || "Untitled upload";
-}
-
-function parseTags(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.map((tag) => String(tag).trim()).filter(Boolean);
-  }
-
-  return String(value || "")
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
 }
 
 async function isDashboardSession() {
@@ -108,15 +98,19 @@ export async function POST(request: Request) {
       );
     }
 
-    await prisma.mediaAsset.create({
-      data: {
-        id,
-        title,
-        durationSeconds: 0,
-        thumbnailUrl: "",
-        playbackUrl: "",
-        tags: parseTags(body.tags),
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.mediaAsset.create({
+        data: {
+          id,
+          title,
+          durationSeconds: 0,
+          thumbnailUrl: "",
+          playbackUrl: "",
+          tags: [],
+        },
+      });
+
+      await syncMediaTags(tx, id, parseTagNames(Array.isArray(body.tags) ? body.tags.join(",") : body.tags));
     });
     await prisma.$executeRawUnsafe(
       'UPDATE "MediaAsset" SET "status" = $1, "muxUploadId" = $2 WHERE "id" = $3',
@@ -127,6 +121,7 @@ export async function POST(request: Request) {
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/media");
+    revalidatePath("/dashboard/tags");
 
     return NextResponse.json({ mediaAssetId: id, url: upload.url });
   } catch (error) {

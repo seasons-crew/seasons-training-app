@@ -76,6 +76,12 @@ function summarizeFeedback(feedback: WorkoutFeedback[]): WorkoutFeedbackSummary 
   };
 }
 
+function mediaTagNames(asset: { mediaTags?: { tag: { name: string } }[]; tags: string[] }) {
+  return asset.mediaTags && asset.mediaTags.length > 0
+    ? asset.mediaTags.map((mediaTag) => mediaTag.tag.name)
+    : asset.tags;
+}
+
 async function getPrisma() {
   const { prisma } = await import("./prisma");
   return prisma;
@@ -89,6 +95,13 @@ export async function listMediaAssets(): Promise<MediaAsset[]> {
   try {
     const prisma = await getPrisma();
     const assets = await prisma.mediaAsset.findMany({
+      include: {
+        mediaTags: {
+          include: { tag: true },
+          where: { tag: { archivedAt: null } },
+          orderBy: { tag: { name: "asc" } },
+        },
+      },
       orderBy: { title: "asc" },
     });
 
@@ -103,7 +116,7 @@ export async function listMediaAssets(): Promise<MediaAsset[]> {
       muxUploadId: asset.muxUploadId ?? undefined,
       status: asset.status,
       sourceDriveUrl: asset.sourceDriveUrl ?? undefined,
-      tags: asset.tags,
+      tags: mediaTagNames(asset),
     }));
   } catch (error) {
     if (isRecoverableDatabaseReadError(error)) {
@@ -188,7 +201,17 @@ export async function getWorkout(id: string): Promise<HydratedWorkout | undefine
         },
         steps: {
           orderBy: { position: "asc" },
-          include: { mediaAsset: true },
+          include: {
+            mediaAsset: {
+              include: {
+                mediaTags: {
+                  include: { tag: true },
+                  where: { tag: { archivedAt: null } },
+                  orderBy: { tag: { name: "asc" } },
+                },
+              },
+            },
+          },
         },
       },
     });
@@ -232,7 +255,7 @@ export async function getWorkout(id: string): Promise<HydratedWorkout | undefine
             muxUploadId: step.mediaAsset.muxUploadId ?? undefined,
             status: step.mediaAsset.status,
             sourceDriveUrl: step.mediaAsset.sourceDriveUrl ?? undefined,
-            tags: step.mediaAsset.tags,
+            tags: mediaTagNames(step.mediaAsset),
           },
         }),
       ),

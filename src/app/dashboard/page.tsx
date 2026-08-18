@@ -50,10 +50,18 @@ export default async function DashboardPage() {
             </h1>
           </div>
           <form action="/api/dashboard/logout" method="post">
-            <button className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-600 transition hover:border-stone-300 hover:text-stone-950">
-              <LogOut size={16} />
-              Sign out
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/dashboard/tags"
+                className="inline-flex h-10 items-center rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-600 transition hover:border-stone-300 hover:text-stone-950"
+              >
+                Tags
+              </Link>
+              <button className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-600 transition hover:border-stone-300 hover:text-stone-950">
+                <LogOut size={16} />
+                Sign out
+              </button>
+            </div>
           </form>
         </header>
 

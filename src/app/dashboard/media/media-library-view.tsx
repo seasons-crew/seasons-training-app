@@ -4,14 +4,16 @@
 import { Edit3, Grid2X2, List, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { updateMediaAsset } from "../actions";
+import { TagPicker } from "../tag-picker";
 import { MediaSearchInput, mediaSearchEventName } from "./media-search-input";
 import { MediaSyncButton } from "./media-sync-button";
-import type { MediaAsset } from "@/lib/types";
+import type { MediaAsset, Tag } from "@/lib/types";
 
 type MediaLibraryViewProps = {
   canEdit: boolean;
   mediaAssets: MediaAsset[];
   muxUploadEnabled: boolean;
+  tags: Tag[];
 };
 
 type ViewMode = "grid" | "list";
@@ -19,7 +21,7 @@ type ViewMode = "grid" | "list";
 const inputClass =
   "h-10 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400";
 
-export function MediaLibraryView({ canEdit, mediaAssets, muxUploadEnabled }: MediaLibraryViewProps) {
+export function MediaLibraryView({ canEdit, mediaAssets, muxUploadEnabled, tags }: MediaLibraryViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [query, setQuery] = useState("");
 
@@ -80,13 +82,13 @@ export function MediaLibraryView({ canEdit, mediaAssets, muxUploadEnabled }: Med
       ) : viewMode === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {filteredAssets.map((asset) => (
-            <MediaGridCard key={asset.id} asset={asset} canEdit={canEdit} />
+            <MediaGridCard key={asset.id} asset={asset} canEdit={canEdit} tags={tags} />
           ))}
         </div>
       ) : (
         <div className="overflow-hidden rounded-md bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
           {filteredAssets.map((asset) => (
-            <MediaListRow key={asset.id} asset={asset} canEdit={canEdit} />
+            <MediaListRow key={asset.id} asset={asset} canEdit={canEdit} tags={tags} />
           ))}
         </div>
       )}
@@ -119,7 +121,7 @@ function ViewButton({
   );
 }
 
-function MediaGridCard({ asset, canEdit }: { asset: MediaAsset; canEdit: boolean }) {
+function MediaGridCard({ asset, canEdit, tags }: { asset: MediaAsset; canEdit: boolean; tags: Tag[] }) {
   return (
     <article className="min-w-0 overflow-hidden rounded-md bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
       <MediaThumbnail asset={asset} className="aspect-video w-full" />
@@ -133,13 +135,13 @@ function MediaGridCard({ asset, canEdit }: { asset: MediaAsset; canEdit: boolean
           </div>
           <MediaMeta asset={asset} compact />
         </div>
-        {canEdit ? <MediaEditModal asset={asset} canEdit={canEdit} /> : null}
+        {canEdit ? <MediaEditModal asset={asset} canEdit={canEdit} tags={tags} /> : null}
       </div>
     </article>
   );
 }
 
-function MediaListRow({ asset, canEdit }: { asset: MediaAsset; canEdit: boolean }) {
+function MediaListRow({ asset, canEdit, tags }: { asset: MediaAsset; canEdit: boolean; tags: Tag[] }) {
   return (
     <article className="grid min-w-0 grid-cols-[88px_minmax(0,1fr)] gap-3 border-b border-stone-100 p-2 last:border-b-0 sm:grid-cols-[104px_minmax(0,1fr)_auto] sm:items-center">
       <MediaThumbnail asset={asset} className="h-14 w-[88px] sm:h-16 sm:w-[104px]" />
@@ -154,7 +156,7 @@ function MediaListRow({ asset, canEdit }: { asset: MediaAsset; canEdit: boolean 
       </div>
       {canEdit ? (
         <div className="col-span-2 sm:col-span-1">
-          <MediaEditModal asset={asset} canEdit={canEdit} compact />
+          <MediaEditModal asset={asset} canEdit={canEdit} compact tags={tags} />
         </div>
       ) : null}
     </article>
@@ -198,7 +200,7 @@ function StatusPill({ status }: { status?: string }) {
   );
 }
 
-function MediaEditModal({ asset, canEdit, compact = false }: { asset: MediaAsset; canEdit: boolean; compact?: boolean }) {
+function MediaEditModal({ asset, canEdit, compact = false, tags }: { asset: MediaAsset; canEdit: boolean; compact?: boolean; tags: Tag[] }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -261,7 +263,7 @@ function MediaEditModal({ asset, canEdit, compact = false }: { asset: MediaAsset
             />
           </Field>
           <Field label="Tags">
-            <input name="tags" disabled={!canEdit} defaultValue={asset.tags.join(", ")} className={inputClass} />
+            <TagPicker disabled={!canEdit} initialTags={asset.tags} tags={tags} />
           </Field>
           <div className="flex justify-end gap-2 pt-2">
             <button
