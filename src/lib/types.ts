@@ -20,6 +20,18 @@ export type MediaAsset = {
   tags: string[];
 };
 
+export type Tag = {
+  id: string;
+  name: string;
+  slug: string;
+  category?: string;
+  description?: string;
+  archivedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  usageCount: number;
+};
+
 export type WorkoutStep = {
   id: string;
   title: string;

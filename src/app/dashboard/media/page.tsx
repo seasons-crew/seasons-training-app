@@ -4,13 +4,18 @@ import { createMediaAsset } from "../actions";
 import { MediaAddTabs } from "./media-add-tabs";
 import { MediaLibraryView } from "./media-library-view";
 import { MuxUploadCard } from "./mux-upload-card";
+import { TagPicker } from "../tag-picker";
+import { listTags } from "@/lib/tags";
 import { isDatabaseConfigured, listMediaAssets } from "@/lib/workout-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function MediaPage() {
-  const mediaAssets = await listMediaAssets();
   const canEdit = isDatabaseConfigured();
+  const [mediaAssets, tags] = await Promise.all([
+    listMediaAssets(),
+    canEdit ? listTags() : Promise.resolve([]),
+  ]);
   const muxUploadEnabled = canEdit && Boolean(process.env.MUX_TOKEN_ID && process.env.MUX_TOKEN_SECRET);
 
   return (
@@ -23,8 +28,14 @@ export default async function MediaPage() {
           <ArrowLeft size={16} />
           Dashboard
         </Link>
-        <header className="mt-6 border-b border-stone-200 pb-6">
+        <header className="mt-6 flex flex-col gap-4 border-b border-stone-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
           <h1 className="text-2xl font-semibold">Media library</h1>
+          <Link
+            href="/dashboard/tags"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-700 hover:border-stone-950 hover:text-stone-950"
+          >
+            Manage tags
+          </Link>
         </header>
 
         {!canEdit ? (
@@ -34,18 +45,23 @@ export default async function MediaPage() {
         ) : null}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <MediaLibraryView mediaAssets={mediaAssets} canEdit={canEdit} muxUploadEnabled={muxUploadEnabled} />
+          <MediaLibraryView
+            mediaAssets={mediaAssets}
+            canEdit={canEdit}
+            muxUploadEnabled={muxUploadEnabled}
+            tags={tags}
+          />
 
           <aside className="lg:sticky lg:top-6">
             <MediaAddTabs
-              bulk={<MuxUploadCard enabled={muxUploadEnabled} />}
+              bulk={<MuxUploadCard enabled={muxUploadEnabled} tags={tags} />}
               manual={
                 <div>
                   <h2 className="text-lg font-semibold">Add media manually</h2>
                   <p className="mt-1 text-sm text-stone-600">
                     Paste playback details only when a video already lives outside the uploader.
                   </p>
-                  <MediaCreateForm canEdit={canEdit} />
+                  <MediaCreateForm canEdit={canEdit} tags={tags} />
                 </div>
               }
             />
@@ -56,7 +72,7 @@ export default async function MediaPage() {
   );
 }
 
-function MediaCreateForm({ canEdit }: { canEdit: boolean }) {
+function MediaCreateForm({ canEdit, tags }: { canEdit: boolean; tags: Awaited<ReturnType<typeof listTags>> }) {
   return (
     <form action={createMediaAsset} className="mt-4 grid gap-3">
       <Field label="Title">
@@ -91,7 +107,7 @@ function MediaCreateForm({ canEdit }: { canEdit: boolean }) {
         />
       </Field>
       <Field label="Tags">
-        <input name="tags" disabled={!canEdit} placeholder="snow, mobility" className={inputClass} />
+        <TagPicker disabled={!canEdit} tags={tags} />
       </Field>
       <button
         disabled={!canEdit}

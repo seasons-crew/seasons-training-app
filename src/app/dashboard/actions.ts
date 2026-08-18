@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { parseTagNames, syncMediaTags, tagSlug } from "@/lib/tags";
 import type {
   SportCategory,
   StepAdvanceMode,
@@ -171,13 +172,6 @@ export async function updateWorkout(formData: FormData) {
   revalidatePath(`/workouts/${id}`);
 }
 
-function parseTags(value: string | null) {
-  return (value || "")
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-}
-
 export async function createMediaAsset(formData: FormData) {
   requireDatabase();
 
@@ -188,23 +182,28 @@ export async function createMediaAsset(formData: FormData) {
   const durationSeconds = Number(requiredString(formData, "durationSeconds"));
   const id = requestedId || slugify(title) || crypto.randomUUID();
 
-  await prisma.mediaAsset.create({
-    data: {
-      id,
-      title,
-      durationSeconds,
-      playbackUrl,
-      thumbnailUrl,
-      muxPlaybackId: optionalString(formData, "muxPlaybackId"),
-      muxAssetId: optionalString(formData, "muxAssetId"),
-      status: "ready",
-      sourceDriveUrl: optionalString(formData, "sourceDriveUrl"),
-      tags: parseTags(optionalString(formData, "tags")),
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.mediaAsset.create({
+      data: {
+        id,
+        title,
+        durationSeconds,
+        playbackUrl,
+        thumbnailUrl,
+        muxPlaybackId: optionalString(formData, "muxPlaybackId"),
+        muxAssetId: optionalString(formData, "muxAssetId"),
+        status: "ready",
+        sourceDriveUrl: optionalString(formData, "sourceDriveUrl"),
+        tags: [],
+      },
+    });
+
+    await syncMediaTags(tx, id, parseTagNames(formData.get("tags")));
   });
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/media");
+  revalidatePath("/dashboard/tags");
 }
 
 export async function updateMediaAsset(formData: FormData) {
@@ -213,22 +212,193 @@ export async function updateMediaAsset(formData: FormData) {
   const id = requiredString(formData, "id");
   const durationSeconds = Number(requiredString(formData, "durationSeconds"));
 
-  await prisma.mediaAsset.update({
-    where: { id },
-    data: {
-      title: requiredString(formData, "title"),
-      durationSeconds,
-      playbackUrl: String(formData.get("playbackUrl") ?? ""),
-      thumbnailUrl: String(formData.get("thumbnailUrl") ?? ""),
-      muxPlaybackId: optionalString(formData, "muxPlaybackId"),
-      muxAssetId: optionalString(formData, "muxAssetId"),
-      sourceDriveUrl: optionalString(formData, "sourceDriveUrl"),
-      tags: parseTags(optionalString(formData, "tags")),
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.mediaAsset.update({
+      where: { id },
+      data: {
+        title: requiredString(formData, "title"),
+        durationSeconds,
+        playbackUrl: String(formData.get("playbackUrl") ?? ""),
+        thumbnailUrl: String(formData.get("thumbnailUrl") ?? ""),
+        muxPlaybackId: optionalString(formData, "muxPlaybackId"),
+        muxAssetId: optionalString(formData, "muxAssetId"),
+        sourceDriveUrl: optionalString(formData, "sourceDriveUrl"),
+      },
+    });
+
+    await syncMediaTags(tx, id, parseTagNames(formData.get("tags")));
   });
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/media");
+  revalidatePath("/dashboard/tags");
+}
+
+export async function createTag(formData: FormData) {
+  requireDatabase();
+
+  const name = requiredString(formData, "name");
+  const slug = tagSlug(name);
+
+  if (!slug) {
+    throw new Error("Tag name is required.");
+  }
+
+  await prisma.tag.upsert({
+    where: { slug },
+    update: {
+      archivedAt: null,
+      category: optionalString(formData, "category"),
+      description: optionalString(formData, "description"),
+      name,
+    },
+    create: {
+      id: crypto.randomUUID(),
+      category: optionalString(formData, "category"),
+      description: optionalString(formData, "description"),
+      name,
+      slug,
+    },
+  });
+
+  revalidatePath("/dashboard/media");
+  revalidatePath("/dashboard/tags");
+}
+
+export async function updateTag(formData: FormData) {
+  requireDatabase();
+
+  const id = requiredString(formData, "id");
+  const name = requiredString(formData, "name");
+  const slug = tagSlug(name);
+
+  if (!slug) {
+    throw new Error("Tag name is required.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.tag.update({
+      where: { id },
+      data: {
+        category: optionalString(formData, "category"),
+        description: optionalString(formData, "description"),
+        name,
+        slug,
+      },
+    });
+
+    const affectedMedia = await tx.mediaAsset.findMany({
+      where: { mediaTags: { some: { tagId: id } } },
+      select: {
+        id: true,
+        mediaTags: {
+          include: { tag: true },
+          where: { tag: { archivedAt: null } },
+        },
+      },
+    });
+
+    for (const media of affectedMedia) {
+      await tx.mediaAsset.update({
+        where: { id: media.id },
+        data: {
+          tags: media.mediaTags
+            .map((mediaTag) => mediaTag.tag.name)
+            .sort((a, b) => a.localeCompare(b)),
+        },
+      });
+    }
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/media");
+  revalidatePath("/dashboard/tags");
+}
+
+export async function archiveTag(formData: FormData) {
+  requireDatabase();
+
+  const id = requiredString(formData, "id");
+
+  await prisma.tag.update({
+    where: { id },
+    data: { archivedAt: new Date() },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/media");
+  revalidatePath("/dashboard/tags");
+}
+
+export async function deleteUnusedTag(formData: FormData) {
+  requireDatabase();
+
+  const id = requiredString(formData, "id");
+  const usage = await prisma.mediaAssetTag.count({ where: { tagId: id } });
+
+  if (usage > 0) {
+    throw new Error("Only unused tags can be deleted.");
+  }
+
+  await prisma.tag.delete({ where: { id } });
+
+  revalidatePath("/dashboard/tags");
+}
+
+export async function mergeTag(formData: FormData) {
+  requireDatabase();
+
+  const sourceId = requiredString(formData, "sourceId");
+  const targetId = requiredString(formData, "targetId");
+
+  if (sourceId === targetId) {
+    throw new Error("Choose two different tags to merge.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const sourceLinks = await tx.mediaAssetTag.findMany({
+      where: { tagId: sourceId },
+      select: { mediaAssetId: true },
+    });
+
+    if (sourceLinks.length > 0) {
+      await tx.mediaAssetTag.createMany({
+        data: sourceLinks.map((link) => ({
+          mediaAssetId: link.mediaAssetId,
+          tagId: targetId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    await tx.mediaAssetTag.deleteMany({ where: { tagId: sourceId } });
+    await tx.tag.update({
+      where: { id: sourceId },
+      data: { archivedAt: new Date() },
+    });
+
+    const affectedIds = [...new Set(sourceLinks.map((link) => link.mediaAssetId))];
+
+    for (const mediaAssetId of affectedIds) {
+      const tags = await tx.mediaAssetTag.findMany({
+        where: { mediaAssetId, tag: { archivedAt: null } },
+        include: { tag: true },
+      });
+
+      await tx.mediaAsset.update({
+        where: { id: mediaAssetId },
+        data: {
+          tags: tags
+            .map((mediaTag) => mediaTag.tag.name)
+            .sort((a, b) => a.localeCompare(b)),
+        },
+      });
+    }
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/media");
+  revalidatePath("/dashboard/tags");
 }
 
 export async function addWorkoutStep(formData: FormData) {

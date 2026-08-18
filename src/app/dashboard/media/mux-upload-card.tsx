@@ -4,6 +4,8 @@ import { createUpload } from "@mux/upchunk";
 import { UploadCloud } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { TagPicker } from "../tag-picker";
+import type { Tag } from "@/lib/types";
 
 type UploadResponse = {
   mediaAssetId?: string;
@@ -41,7 +43,7 @@ function parseUploadResponse(text: string) {
   }
 }
 
-export function MuxUploadCard({ enabled }: { enabled: boolean }) {
+export function MuxUploadCard({ enabled, tags: availableTags }: { enabled: boolean; tags: Tag[] }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const mediaAssetIdsRef = useRef(new Map<string, string>());
@@ -192,16 +194,15 @@ export function MuxUploadCard({ enabled }: { enabled: boolean }) {
         </div>
       </div>
 
-      <label className="mt-5 grid min-w-0 gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+      <div className="mt-5 grid min-w-0 gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
         Tags for all files
-        <input
-          value={tags}
-          onChange={(event) => setTags(event.target.value)}
+        <TagPicker
           disabled={!enabled}
-          placeholder="snow, warmup"
-          className="h-10 min-w-0 rounded-md border border-stone-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-stone-950 outline-none focus:border-stone-950 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+          name="uploadTagsPreview"
+          onTagsChange={(selectedTags) => setTags(selectedTags.join(","))}
+          tags={availableTags}
         />
-      </label>
+      </div>
 
       <div
         className="mt-4 flex min-h-44 min-w-0 flex-col items-center justify-center gap-3 rounded-md border border-dashed border-stone-300 bg-stone-50 p-6 text-center"

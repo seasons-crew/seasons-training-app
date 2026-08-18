@@ -45,10 +45,37 @@ model MediaAsset {
   tags            String[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  mediaTags       MediaAssetTag[]
   workoutSteps    WorkoutStep[]
 
   @@index([title])
   @@index([status])
+}
+
+model Tag {
+  id          String          @id
+  name        String
+  slug        String          @unique
+  category    String?
+  description String?
+  archivedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  mediaAssets MediaAssetTag[]
+
+  @@index([name])
+  @@index([archivedAt])
+}
+
+model MediaAssetTag {
+  mediaAssetId String
+  tagId        String
+  createdAt    DateTime   @default(now())
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+  tag          Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([mediaAssetId, tagId])
+  @@index([tagId])
 }
 
 model Workout {

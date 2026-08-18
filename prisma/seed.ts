@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { mediaAssets, workouts } from "../src/lib/workouts";
+import { syncMediaTags } from "../src/lib/tags";
 
 const prisma = new PrismaClient();
 
@@ -35,6 +36,8 @@ async function main() {
         tags: asset.tags,
       },
     });
+
+    await syncMediaTags(prisma, asset.id, asset.tags);
   }
 
   for (const workout of workouts) {
